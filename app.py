@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, Response
+from flask import Flask, render_template, request, redirect, url_for, Response, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
     LoginManager,
@@ -24,12 +24,10 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
-# --- LOAD THE AI BRAIN ---
+# --- LOAD AI ---
 try:
     model = joblib.load("sirs_model.pkl")
-    print("AI Model Loaded Successfully!")
 except:
-    print("WARNING: Model not found. Run train_model.py first.")
     model = None
 
 
@@ -38,6 +36,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default="nurse")  # NEW: Role Column
 
 
 class Entry(db.Model):
@@ -51,31 +50,28 @@ class Entry(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 
-# --- LOGIN LOADER ---
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
 
 # --- ROUTES ---
-
-
 @app.route("/")
 @login_required
 def home():
     all_entries = Entry.query.order_by(Entry.timestamp.desc()).all()
 
-    total_patients = len(all_entries)
-    high_risk_count = 0
-    stable_count = 0
+    # Calculate stats for Doctor/Admin
+    total = len(all_entries)
+    high = sum(1 for e in all_entries if e.status == "High")
+    stable = total - high
 
+    stats = {"total": total, "high": high, "stable": stable}
+
+    # Pass 'history' and 'stats' to frontend
+    # We create the history list manually to format dates nicely
     history_data = []
     for e in all_entries:
-        if e.status == "High":
-            high_risk_count += 1
-        else:
-            stable_count += 1
-
         history_data.append(
             {
                 "time": e.timestamp.strftime("%H:%M:%S"),
@@ -85,11 +81,7 @@ def home():
             }
         )
 
-    stats = {"total": total_patients, "high": high_risk_count, "stable": stable_count}
-
-    return render_template(
-        "home.html", history=history_data, stats=stats, user=current_user
-    )
+    return render_template("home.html", history=history_data, stats=stats)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -97,15 +89,12 @@ def login():
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
-
         user = User.query.filter_by(username=username).first()
-
         if user and user.password == password:
             login_user(user)
             return redirect(url_for("home"))
         else:
             return render_template("login.html", error="Invalid Credentials")
-
     return render_template("login.html")
 
 
@@ -119,35 +108,24 @@ def logout():
 @app.route("/add_vitals", methods=["POST"])
 @login_required
 def add_vitals():
-    # 1. Get data
+    # SECURITY CHECK: Doctors cannot add vitals
+    if current_user.role == "doctor":
+        return "Access Denied: Doctors cannot perform data entry."
+
     temp = float(request.form.get("temperature"))
     hr = int(request.form.get("heart_rate"))
     rr = int(request.form.get("resp_rate"))
     wbc = float(request.form.get("wbc_count"))
 
-    # 2. AI PREDICTION LOGIC
+    # AI PREDICTION
     if model:
-        # Create a dataframe for the AI (it expects named columns)
-        input_data = pd.DataFrame(
-            [[temp, hr, rr, wbc]], columns=["temp", "hr", "rr", "wbc"]
-        )
-
-        # Ask the model: 1 = Sick, 0 = Healthy
-        prediction = model.predict(input_data)[0]
-
-        risk_status = "High" if prediction == 1 else "Stable"
+        df = pd.DataFrame([[temp, hr, rr, wbc]], columns=["temp", "hr", "rr", "wbc"])
+        risk = "High" if model.predict(df)[0] == 1 else "Stable"
     else:
-        # Fallback if model fails
-        risk_status = "Stable"
+        risk = "Stable"
 
-    # 3. Save result
     new_entry = Entry(
-        name=request.form.get("name"),
-        temp=temp,
-        hr=hr,
-        rr=rr,
-        wbc=wbc,
-        status=risk_status,
+        name=request.form.get("name"), temp=temp, hr=hr, rr=rr, wbc=wbc, status=risk
     )
     db.session.add(new_entry)
     db.session.commit()
@@ -157,21 +135,14 @@ def add_vitals():
 @app.route("/export_data")
 @login_required
 def export_data():
+    # SECURITY CHECK: Nurses cannot export data
+    if current_user.role == "nurse":
+        return "Access Denied: Nurses cannot export confidential reports."
+
     all_entries = Entry.query.order_by(Entry.timestamp.desc()).all()
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(
-        [
-            "ID",
-            "Timestamp",
-            "Patient Name",
-            "Temperature",
-            "Heart Rate",
-            "Resp Rate",
-            "WBC Count",
-            "Risk Status",
-        ]
-    )
+    writer.writerow(["ID", "Timestamp", "Name", "Temp", "HR", "RR", "WBC", "Status"])
     for e in all_entries:
         writer.writerow(
             [e.id, e.timestamp, e.name, e.temp, e.hr, e.rr, e.wbc, e.status]
@@ -184,12 +155,23 @@ def export_data():
     )
 
 
+# --- SETUP: Create the 3 Roles ---
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
+        # 1. Admin
         if not User.query.filter_by(username="admin").first():
-            admin = User(username="admin", password="password123")
-            db.session.add(admin)
-            db.session.commit()
+            db.session.add(User(username="admin", password="password123", role="admin"))
+        # 2. Doctor (Analyst)
+        if not User.query.filter_by(username="doctor").first():
+            db.session.add(
+                User(username="doctor", password="password123", role="doctor")
+            )
+        # 3. Nurse (Data Entry)
+        if not User.query.filter_by(username="nurse").first():
+            db.session.add(User(username="nurse", password="password123", role="nurse"))
+
+        db.session.commit()
+        print("System Ready: Admin, Doctor, and Nurse accounts active.")
 
     app.run(debug=True)
