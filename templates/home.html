@@ -76,6 +76,31 @@
   </div>
 
   <div class="col-md-8">
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-white">
+        <h5 class="mb-0">
+          <i class="fa-solid fa-chart-pie text-primary"></i> Ward Analytics
+        </h5>
+      </div>
+      <div class="card-body d-flex justify-content-around align-items-center">
+        <div class="text-center">
+          <h2 class="display-4 fw-bold text-primary">{{ stats.total }}</h2>
+          <p class="text-muted">Total Patients</p>
+        </div>
+        <div style="width: 180px; height: 180px">
+          <canvas id="riskChart"></canvas>
+        </div>
+        <div>
+          <h5 class="text-danger fw-bold">
+            <i class="fa-solid fa-circle"></i> {{ stats.high }} Critical
+          </h5>
+          <h5 class="text-success fw-bold">
+            <i class="fa-solid fa-circle"></i> {{ stats.stable }} Stable
+          </h5>
+        </div>
+      </div>
+    </div>
+
     <div class="card shadow-sm">
       <div
         class="card-header bg-white d-flex justify-content-between align-items-center"
@@ -121,4 +146,26 @@
     </div>
   </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const ctx = document.getElementById('riskChart').getContext('2d');
+  const riskChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+          labels: ['Critical', 'Stable'],
+          datasets: [{
+              data: [{{ stats.high }}, {{ stats.stable }}],
+              backgroundColor: ['#dc3545', '#198754'],
+              borderWidth: 0
+          }]
+      },
+      options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '70%',
+          plugins: { legend: { display: false } }
+      }
+  });
+</script>
 {% endblock %}

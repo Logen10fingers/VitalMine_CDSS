@@ -13,19 +13,19 @@ from datetime import datetime
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///vitalmine.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["SECRET_KEY"] = "secret_key_vitalmine_2026"  # Needed for security
+app.config["SECRET_KEY"] = "secret_key_vitalmine_2026"
 
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = "login"  # Where to send unauthorized users
+login_manager.login_view = "login"
 
 
 # --- DATABASE MODELS ---
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(100), nullable=False)  # In real life, hash this!
+    password = db.Column(db.String(100), nullable=False)
 
 
 class Entry(db.Model):
@@ -49,11 +49,22 @@ def load_user(user_id):
 
 
 @app.route("/")
-@login_required  # <--- This protects the dashboard!
+@login_required
 def home():
     all_entries = Entry.query.order_by(Entry.timestamp.desc()).all()
+
+    # --- STATISTICS CALCULATION FOR CHART ---
+    total_patients = len(all_entries)
+    high_risk_count = 0
+    stable_count = 0
+
     history_data = []
     for e in all_entries:
+        if e.status == "High":
+            high_risk_count += 1
+        else:
+            stable_count += 1
+
         history_data.append(
             {
                 "time": e.timestamp.strftime("%H:%M:%S"),
@@ -62,7 +73,13 @@ def home():
                 "status": e.status,
             }
         )
-    return render_template("home.html", history=history_data, user=current_user)
+
+    # Pack stats into a dictionary
+    stats = {"total": total_patients, "high": high_risk_count, "stable": stable_count}
+
+    return render_template(
+        "home.html", history=history_data, stats=stats, user=current_user
+    )
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -71,7 +88,6 @@ def login():
         username = request.form.get("username")
         password = request.form.get("password")
 
-        # Check against database
         user = User.query.filter_by(username=username).first()
 
         if user and user.password == password:
@@ -123,11 +139,10 @@ def add_vitals():
     return redirect(url_for("home"))
 
 
-# --- SETUP (Create Admin User) ---
+# --- SETUP ---
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-        # Create a default admin user if one doesn't exist
         if not User.query.filter_by(username="admin").first():
             admin = User(username="admin", password="password123")
             db.session.add(admin)
