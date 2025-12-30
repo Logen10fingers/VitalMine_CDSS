@@ -87,7 +87,7 @@
           href="/export_data"
           class="btn btn-sm btn-light text-success fw-bold"
         >
-          <i class="fa-solid fa-file-csv"></i> Export Report
+          <i class="fa-solid fa-file-csv"></i> Export CSV
         </a>
       </div>
       <div class="card-body d-flex justify-content-around align-items-center">
@@ -122,6 +122,7 @@
               <th>Patient</th>
               <th>Vitals</th>
               <th>AI Risk Assessment</th>
+              <th>Report</th>
             </tr>
           </thead>
           <tbody>
@@ -133,9 +134,19 @@
               <td>
                 {% if row.status == 'High' %}
                 <span class="badge bg-danger">SEPSIS ALERT</span>
+                {% elif row.status == 'Warning' %}
+                <span class="badge bg-warning text-dark">Check Fever/HR</span>
                 {% else %}
                 <span class="badge bg-success">Stable</span>
                 {% endif %}
+              </td>
+              <td>
+                <a
+                  href="/generate_pdf/{{ row.id }}"
+                  class="btn btn-sm btn-outline-dark"
+                >
+                  <i class="fa-solid fa-file-pdf"></i> PDF
+                </a>
               </td>
             </tr>
             {% endfor %}

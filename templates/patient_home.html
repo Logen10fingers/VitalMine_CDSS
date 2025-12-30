@@ -14,6 +14,16 @@
             <h3>HIGH RISK DETECTED</h3>
             <p class="lead">{{ advice }}</p>
           </div>
+
+          {% elif status == 'Warning' %}
+          <div class="alert alert-warning mt-3">
+            <h1 class="display-1 text-warning">
+              <i class="fa-solid fa-notes-medical"></i>
+            </h1>
+            <h3 class="text-dark">Medical Attention Advised</h3>
+            <p class="lead text-dark">{{ advice }}</p>
+          </div>
+
           {% elif status == 'Stable' %}
           <div class="alert alert-success mt-3">
             <h1 class="display-1">
@@ -22,6 +32,7 @@
             <h3>You are Stable</h3>
             <p class="lead">{{ advice }}</p>
           </div>
+
           {% else %}
           <div class="alert alert-secondary mt-3">
             <h3>No Data Logged Today</h3>
@@ -112,8 +123,13 @@
             <strong>T:</strong> {{ entry.temp }} | <strong>HR:</strong> {{
             entry.hr }}
           </div>
+
           {% if entry.status == 'High' %}
           <span class="badge bg-danger rounded-pill">Critical</span>
+          {% elif entry.status == 'Warning' %}
+          <span class="badge bg-warning text-dark rounded-pill"
+            >Check Vitals</span
+          >
           {% else %}
           <span class="badge bg-success rounded-pill">Stable</span>
           {% endif %}
