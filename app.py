@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, Response
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
     LoginManager,
@@ -9,6 +9,8 @@ from flask_login import (
     current_user,
 )
 from datetime import datetime
+import csv
+import io
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///vitalmine.db"
@@ -53,7 +55,7 @@ def load_user(user_id):
 def home():
     all_entries = Entry.query.order_by(Entry.timestamp.desc()).all()
 
-    # --- STATISTICS CALCULATION FOR CHART ---
+    # --- STATISTICS ---
     total_patients = len(all_entries)
     high_risk_count = 0
     stable_count = 0
@@ -74,7 +76,6 @@ def home():
             }
         )
 
-    # Pack stats into a dictionary
     stats = {"total": total_patients, "high": high_risk_count, "stable": stable_count}
 
     return render_template(
@@ -109,7 +110,6 @@ def logout():
 @app.route("/add_vitals", methods=["POST"])
 @login_required
 def add_vitals():
-    # LOGIC (The Brain)
     temp = float(request.form.get("temperature"))
     hr = int(request.form.get("heart_rate"))
     rr = int(request.form.get("resp_rate"))
@@ -139,6 +139,46 @@ def add_vitals():
     return redirect(url_for("home"))
 
 
+# --- NEW: EXPORT ROUTE ---
+@app.route("/export_data")
+@login_required
+def export_data():
+    # 1. Get all data
+    all_entries = Entry.query.order_by(Entry.timestamp.desc()).all()
+
+    # 2. Create a CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Add Header Row
+    writer.writerow(
+        [
+            "ID",
+            "Timestamp",
+            "Patient Name",
+            "Temperature",
+            "Heart Rate",
+            "Resp Rate",
+            "WBC Count",
+            "Risk Status",
+        ]
+    )
+
+    # Add Data Rows
+    for e in all_entries:
+        writer.writerow(
+            [e.id, e.timestamp, e.name, e.temp, e.hr, e.rr, e.wbc, e.status]
+        )
+
+    # 3. Create the Response as a file download
+    output.seek(0)
+    return Response(
+        output,
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment;filename=ward_report.csv"},
+    )
+
+
 # --- SETUP ---
 if __name__ == "__main__":
     with app.app_context():
@@ -147,6 +187,5 @@ if __name__ == "__main__":
             admin = User(username="admin", password="password123")
             db.session.add(admin)
             db.session.commit()
-            print("Admin User Created: admin / password123")
 
     app.run(debug=True)
