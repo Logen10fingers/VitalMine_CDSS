@@ -1,100 +1,124 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>VitalMine - Entry</title>
-    <style>
-      body {
-        font-family: sans-serif;
-        padding: 20px;
-      }
-      .form-group {
-        margin-bottom: 15px;
-      }
-      label {
-        display: block;
-        font-weight: bold;
-      }
-      input,
-      select {
-        padding: 5px;
-        width: 300px;
-      }
-      button {
-        padding: 10px 20px;
-        background-color: #007bff;
-        color: white;
-        border: none;
-        cursor: pointer;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-      }
-      th,
-      td {
-        border: 1px solid #ddd;
-        padding: 8px;
-        text-align: left;
-      }
-      .risk-High {
-        background-color: #ffcccc;
-      } /* Red for Danger */
-      .risk-Stable {
-        background-color: #ccffcc;
-      } /* Green for Safe */
-    </style>
-  </head>
-  <body>
-    <h1>VitalMine: Patient Entry</h1>
+{% extends "base.html" %} {% block content %}
+<div class="row">
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-header bg-white">
+        <h5 class="mb-0">
+          <i class="fa-solid fa-user-plus text-primary"></i> New Vitals Entry
+        </h5>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="/add_vitals">
+          <div class="mb-3">
+            <label class="form-label">Patient Name</label>
+            <input
+              type="text"
+              name="name"
+              class="form-control"
+              placeholder="e.g. John Doe"
+              required
+            />
+          </div>
 
-    <form method="POST" action="/add_vitals">
-      <h3>New Patient Vitals</h3>
-      <div class="form-group">
-        <label>Patient Name:</label>
-        <input type="text" name="name" required />
-      </div>
-      <div class="form-group">
-        <label>Temperature (°C):</label>
-        <input type="number" step="0.1" name="temperature" required />
-      </div>
-      <div class="form-group">
-        <label>Heart Rate (bpm):</label>
-        <input type="number" name="heart_rate" required />
-      </div>
-      <div class="form-group">
-        <label>Respiratory Rate (breaths/min):</label>
-        <input type="number" name="resp_rate" required />
-      </div>
-      <div class="form-group">
-        <label>WBC Count:</label>
-        <input type="number" name="wbc_count" required />
-      </div>
-      <button type="submit">Analyze & Save</button>
-    </form>
+          <div class="row">
+            <div class="col-6 mb-3">
+              <label class="form-label">Temp (°C)</label>
+              <input
+                type="number"
+                step="0.1"
+                name="temperature"
+                class="form-control"
+                required
+              />
+              <small class="text-muted">Normal: 36-38</small>
+            </div>
+            <div class="col-6 mb-3">
+              <label class="form-label">Heart Rate</label>
+              <input
+                type="number"
+                name="heart_rate"
+                class="form-control"
+                required
+              />
+              <small class="text-muted">Normal: 60-90</small>
+            </div>
+          </div>
 
-    <hr />
+          <div class="row">
+            <div class="col-6 mb-3">
+              <label class="form-label">Resp. Rate</label>
+              <input
+                type="number"
+                name="resp_rate"
+                class="form-control"
+                required
+              />
+              <small class="text-muted">Max: 20</small>
+            </div>
+            <div class="col-6 mb-3">
+              <label class="form-label">WBC Count</label>
+              <input
+                type="number"
+                name="wbc_count"
+                class="form-control"
+                required
+              />
+              <small class="text-muted">Max: 12000</small>
+            </div>
+          </div>
 
-    <h3>Ward Status</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Time</th>
-          <th>Name</th>
-          <th>Vitals (T / HR / RR / WBC)</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in history %}
-        <tr class="risk-{{ row.status }}">
-          <td>{{ row.time }}</td>
-          <td>{{ row.name }}</td>
-          <td>{{ row.vitals }}</td>
-          <td><strong>{{ row.status }}</strong></td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </body>
-</html>
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="fa-solid fa-microscope"></i> Analyze & Save
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <div class="card shadow-sm">
+      <div
+        class="card-header bg-white d-flex justify-content-between align-items-center"
+      >
+        <h5 class="mb-0">
+          <i class="fa-solid fa-list-check text-primary"></i> Live Ward Status
+        </h5>
+        <span class="badge bg-secondary">Real-Time</span>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Time</th>
+              <th>Patient</th>
+              <th>Vitals (T / HR / RR / WBC)</th>
+              <th>Risk Assessment</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in history %}
+            <tr class="risk-{{ row.status }}">
+              <td><small class="text-muted">{{ row.time }}</small></td>
+              <td class="fw-bold">{{ row.name }}</td>
+              <td>{{ row.vitals }}</td>
+              <td>
+                {% if row.status == 'High' %}
+                <span class="badge bg-danger"
+                  ><i class="fa-solid fa-triangle-exclamation"></i> SEPSIS
+                  ALERT</span
+                >
+                {% else %}
+                <span class="badge bg-success"
+                  ><i class="fa-solid fa-check"></i> Stable</span
+                >
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
