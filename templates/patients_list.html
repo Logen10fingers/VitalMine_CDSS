@@ -1,0 +1,41 @@
+{% extends "base.html" %} {% block content %}
+<div class="card shadow">
+  <div class="card-header bg-primary text-white">
+    <h5 class="mb-0"><i class="fa-solid fa-users"></i> Patient Directory</h5>
+  </div>
+  <div class="card-body">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Patient ID</th>
+          <th>Username</th>
+          <th>Last Check-in</th>
+          <th>Current Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in patients %}
+        <tr>
+          <td>#{{ p.id }}</td>
+          <td><strong>{{ p.username }}</strong></td>
+          <td>{{ p.last_seen }}</td>
+          <td>
+            {% if p.status == 'High' %}
+            <span class="badge bg-danger">Critical</span>
+            {% elif p.status == 'Stable' %}
+            <span class="badge bg-success">Stable</span>
+            {% else %}
+            <span class="badge bg-secondary">Unknown</span>
+            {% endif %}
+          </td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary">View History</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

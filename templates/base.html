@@ -18,10 +18,11 @@
       }
       .navbar {
         background-color: #0d6efd;
-      } /* Medical Blue */
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      } /* Medical Blue + Shadow */
       .card {
         border: none;
-        shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
       .risk-High {
         background-color: #ffe6e6;
@@ -30,12 +31,38 @@
       .risk-Stable {
         border-left: 5px solid #198754;
       }
+
+      /* --- NEW BUTTON STYLING --- */
+      .navbar-dark .navbar-nav .nav-link {
+        color: rgba(
+          255,
+          255,
+          255,
+          0.85
+        ) !important; /* Both buttons start bright */
+        font-weight: 500;
+        transition: all 0.3s ease; /* Smooth animation */
+        padding-bottom: 5px;
+      }
+
+      /* Hover Effect (Glow + Lift) */
+      .navbar-dark .navbar-nav .nav-link:hover {
+        color: #ffffff !important;
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+        transform: translateY(-2px);
+      }
+
+      /* The Active Page (Adds an underline instead of changing color) */
+      .nav-link.active {
+        color: #ffffff !important;
+        border-bottom: 2px solid white;
+      }
     </style>
   </head>
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark mb-4">
       <div class="container">
-        <a class="navbar-brand" href="/"
+        <a class="navbar-brand fw-bold" href="/"
           ><i class="fa-solid fa-heart-pulse"></i> VitalMine CDSS</a
         >
         <button
@@ -49,18 +76,34 @@
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav ms-auto align-items-center">
             <li class="nav-item">
-              <a class="nav-link active" href="/">Dashboard</a>
+              <a
+                class="nav-link {{ 'active' if request.path == '/' else '' }}"
+                href="/"
+              >
+                Dashboard
+              </a>
             </li>
-            <li class="nav-item"><a class="nav-link" href="#">Patients</a></li>
 
+            {% if current_user.is_authenticated and current_user.role !=
+            'patient' %}
+            <li class="nav-item">
+              <a
+                class="nav-link {{ 'active' if request.path == '/patients' else '' }}"
+                href="/patients"
+              >
+                Patients Directory
+              </a>
+            </li>
+            {% endif %} {% if current_user.is_authenticated %}
             <li class="nav-item ms-3">
               <a
-                class="btn btn-sm btn-light text-primary fw-bold"
+                class="btn btn-sm btn-light text-primary fw-bold shadow-sm"
                 href="/logout"
               >
                 <i class="fa-solid fa-sign-out-alt"></i> Logout
               </a>
             </li>
+            {% endif %}
           </ul>
         </div>
       </div>

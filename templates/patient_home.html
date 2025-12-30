@@ -1,0 +1,126 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mt-4">
+  <div class="row mb-4">
+    <div class="col-md-8 mx-auto">
+      <div class="card shadow-lg border-0">
+        <div class="card-body text-center p-5">
+          <h2 class="text-muted">Hello, {{ current_user.username }}</h2>
+
+          {% if status == 'High' %}
+          <div class="alert alert-danger mt-3">
+            <h1 class="display-1">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </h1>
+            <h3>HIGH RISK DETECTED</h3>
+            <p class="lead">{{ advice }}</p>
+          </div>
+          {% elif status == 'Stable' %}
+          <div class="alert alert-success mt-3">
+            <h1 class="display-1">
+              <i class="fa-solid fa-heart-circle-check"></i>
+            </h1>
+            <h3>You are Stable</h3>
+            <p class="lead">{{ advice }}</p>
+          </div>
+          {% else %}
+          <div class="alert alert-secondary mt-3">
+            <h3>No Data Logged Today</h3>
+            <p>Please log your vitals below.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-8 mx-auto">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">
+            <i class="fa-solid fa-notes-medical"></i> Log My Daily Vitals
+          </h5>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="/add_vitals">
+            <div class="row">
+              <div class="col-6 mb-3">
+                <label>Temperature (°C)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  name="temperature"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <div class="col-6 mb-3">
+                <label>Heart Rate (bpm)</label>
+                <input
+                  type="number"
+                  name="heart_rate"
+                  class="form-control"
+                  required
+                />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-6 mb-3">
+                <label>Resp. Rate</label>
+                <input
+                  type="number"
+                  name="resp_rate"
+                  class="form-control"
+                  required
+                />
+              </div>
+              <div class="col-6 mb-3">
+                <label>WBC (If known)</label>
+                <input
+                  type="number"
+                  name="wbc_count"
+                  class="form-control"
+                  value="8000"
+                  required
+                />
+                <small class="text-muted"
+                  >Default: 8000 (if no blood test)</small
+                >
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 btn-lg">
+              Check My Status
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-4">
+    <div class="col-md-8 mx-auto">
+      <h5>My Recovery History</h5>
+      <div class="list-group">
+        {% for entry in entries %}
+        <div
+          class="list-group-item d-flex justify-content-between align-items-center"
+        >
+          <div>
+            <small class="text-muted"
+              >{{ entry.timestamp.strftime('%Y-%m-%d %H:%M') }}</small
+            ><br />
+            <strong>T:</strong> {{ entry.temp }} | <strong>HR:</strong> {{
+            entry.hr }}
+          </div>
+          {% if entry.status == 'High' %}
+          <span class="badge bg-danger rounded-pill">Critical</span>
+          {% else %}
+          <span class="badge bg-success rounded-pill">Stable</span>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
