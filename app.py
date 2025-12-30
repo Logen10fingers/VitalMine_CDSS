@@ -11,6 +11,8 @@ from flask_login import (
 from datetime import datetime
 import csv
 import io
+import joblib
+import pandas as pd
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///vitalmine.db"
@@ -21,6 +23,14 @@ db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
+
+# --- LOAD THE AI BRAIN ---
+try:
+    model = joblib.load("sirs_model.pkl")
+    print("AI Model Loaded Successfully!")
+except:
+    print("WARNING: Model not found. Run train_model.py first.")
+    model = None
 
 
 # --- DATABASE MODELS ---
@@ -55,7 +65,6 @@ def load_user(user_id):
 def home():
     all_entries = Entry.query.order_by(Entry.timestamp.desc()).all()
 
-    # --- STATISTICS ---
     total_patients = len(all_entries)
     high_risk_count = 0
     stable_count = 0
@@ -110,22 +119,28 @@ def logout():
 @app.route("/add_vitals", methods=["POST"])
 @login_required
 def add_vitals():
+    # 1. Get data
     temp = float(request.form.get("temperature"))
     hr = int(request.form.get("heart_rate"))
     rr = int(request.form.get("resp_rate"))
     wbc = float(request.form.get("wbc_count"))
 
-    score = 0
-    if temp > 38.0 or temp < 36.0:
-        score += 1
-    if hr > 90:
-        score += 1
-    if rr > 20:
-        score += 1
-    if wbc > 12000 or wbc < 4000:
-        score += 1
-    risk_status = "High" if score >= 2 else "Stable"
+    # 2. AI PREDICTION LOGIC
+    if model:
+        # Create a dataframe for the AI (it expects named columns)
+        input_data = pd.DataFrame(
+            [[temp, hr, rr, wbc]], columns=["temp", "hr", "rr", "wbc"]
+        )
 
+        # Ask the model: 1 = Sick, 0 = Healthy
+        prediction = model.predict(input_data)[0]
+
+        risk_status = "High" if prediction == 1 else "Stable"
+    else:
+        # Fallback if model fails
+        risk_status = "Stable"
+
+    # 3. Save result
     new_entry = Entry(
         name=request.form.get("name"),
         temp=temp,
@@ -139,18 +154,12 @@ def add_vitals():
     return redirect(url_for("home"))
 
 
-# --- NEW: EXPORT ROUTE ---
 @app.route("/export_data")
 @login_required
 def export_data():
-    # 1. Get all data
     all_entries = Entry.query.order_by(Entry.timestamp.desc()).all()
-
-    # 2. Create a CSV in memory
     output = io.StringIO()
     writer = csv.writer(output)
-
-    # Add Header Row
     writer.writerow(
         [
             "ID",
@@ -163,14 +172,10 @@ def export_data():
             "Risk Status",
         ]
     )
-
-    # Add Data Rows
     for e in all_entries:
         writer.writerow(
             [e.id, e.timestamp, e.name, e.temp, e.hr, e.rr, e.wbc, e.status]
         )
-
-    # 3. Create the Response as a file download
     output.seek(0)
     return Response(
         output,
@@ -179,7 +184,6 @@ def export_data():
     )
 
 
-# --- SETUP ---
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
