@@ -10,18 +10,16 @@ import joblib
 import pandas as pd
 
 # --- MVC IMPORTS ---
-# We now import the Database and Models from models.py
 from models import db, User, Entry
 
-# We import the PDF/CSV tools from utils.py
-from utils import generate_pdf_report, generate_csv_report
+# Added ask_medical_ai to imports
+from utils import generate_pdf_report, generate_csv_report, ask_medical_ai
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///vitalmine.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SECRET_KEY"] = "secret_key_vitalmine_2026"
 
-# Initialize the Database with the App
 db.init_app(app)
 
 login_manager = LoginManager()
@@ -36,7 +34,6 @@ except:
 
 @login_manager.user_loader
 def load_user(user_id):
-    # --- UPDATED FIX FOR LEGACY WARNING ---
     return db.session.get(User, int(user_id))
 
 
@@ -153,7 +150,6 @@ def add_vitals():
     except ValueError:
         return "Invalid Data", 400
 
-    # Name Logic
     if current_user.role == "patient":
         patient_name = current_user.username
         user_id_save = current_user.id
@@ -161,14 +157,12 @@ def add_vitals():
         patient_name = request.form.get("name") or current_user.username
         user_id_save = None
 
-    # AI Prediction
     ai_risk = "Stable"
     if model:
         df = pd.DataFrame([[temp, hr, rr, wbc]], columns=["temp", "hr", "rr", "wbc"])
         if model.predict(df)[0] == 1:
             ai_risk = "High"
 
-    # Decision Logic
     status = "Stable"
     advice_text = "Vitals are normal. Continue standard care."
 
@@ -177,7 +171,6 @@ def add_vitals():
         advice_text = (
             "CRITICAL: Sepsis signs detected. Proceed to Emergency immediately."
         )
-        # Email Simulation
         print(f"\n[SERVER LOG] 📧 SMTP WORKER: Alert sent for {patient_name}")
         flash(f"🚨 EMERGENCY PROTOCOL: Alert sent for {patient_name}.", "danger")
     elif temp > 38.0:
@@ -220,7 +213,7 @@ def add_vitals():
 @app.route("/generate_pdf/<int:entry_id>")
 @login_required
 def generate_pdf(entry_id):
-    entry = db.session.get(Entry, entry_id)  # Updated this too for consistency
+    entry = db.session.get(Entry, entry_id)
     if not entry:
         return "Not Found", 404
     return generate_pdf_report(entry)
@@ -234,10 +227,38 @@ def export_data():
     return generate_csv_report(Entry.query.order_by(Entry.timestamp.desc()).all())
 
 
+# --- NEW: CHATBOT ROUTE (PHASE 19) ---
+@app.route("/chat_with_ai", methods=["POST"])
+@login_required
+def chat_with_ai():
+    user_question = request.json.get("question")
+
+    # Get the latest patient data from DB
+    last_entry = (
+        Entry.query.filter_by(user_id=current_user.id)
+        .order_by(Entry.timestamp.desc())
+        .first()
+    )
+
+    if last_entry:
+        context = {
+            "name": current_user.username,
+            "temp": last_entry.temp,
+            "hr": last_entry.hr,
+            "status": last_entry.status,
+        }
+    else:
+        context = {"name": "Unknown", "temp": "N/A", "hr": "N/A", "status": "Unknown"}
+
+    # Ask the Brain (in utils.py)
+    ai_response = ask_medical_ai(user_question, context)
+
+    return {"response": ai_response}
+
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-        # Create default users if they don't exist
         if not User.query.filter_by(username="admin").first():
             db.session.add(User(username="admin", password="password123", role="admin"))
             db.session.add(
