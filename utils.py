@@ -4,9 +4,15 @@ import io
 import csv
 from flask import Response, send_file
 import google.generativeai as genai
+import os
+from dotenv import load_dotenv  # New Import
+
+# Load the secret .env file
+load_dotenv()
 
 # --- CONFIGURATION ---
-GEMINI_API_KEY = "AIzaSyAJF3cVxJj_G6zTJ9G_YeZnlfFQJ7fz2fM"
+# Now we read the key securely from the environment
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 
 def ask_medical_ai(user_question, patient_context):
@@ -14,9 +20,13 @@ def ask_medical_ai(user_question, patient_context):
     Sends vitals to AI. Uses 'Dynamic Model Discovery' to find a working brain.
     """
     try:
+        # Safety Check: If key is missing, don't crash
+        if not GEMINI_API_KEY:
+            return "Configuration Error: API Key missing in .env file."
+
         genai.configure(api_key=GEMINI_API_KEY)
 
-        # --- SMART FIX: AUTO-DETECT MODEL ---
+        # ... (The rest of the code stays exactly the same) ...
         # 1. List all models your key has access to
         available_models = []
         for m in genai.list_models():
@@ -72,6 +82,9 @@ def ask_medical_ai(user_question, patient_context):
         return "I am having trouble connecting. Please try again in a moment."
 
 
+# ... (The rest of the file generate_pdf_report etc stays the same) ...
+# (If you need the full file again with generate_pdf_report let me know,
+# otherwise just keep the bottom half the same)
 def generate_pdf_report(entry):
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
