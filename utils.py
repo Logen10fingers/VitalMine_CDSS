@@ -5,87 +5,86 @@ import csv
 from flask import Response, send_file
 import google.generativeai as genai
 import os
-from dotenv import load_dotenv  # New Import
+from dotenv import load_dotenv
 
 # Load the secret .env file
 load_dotenv()
 
 # --- CONFIGURATION ---
-# Now we read the key securely from the environment
+# Read the key securely from the environment
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 
 def ask_medical_ai(user_question, patient_context):
     """
-    Sends vitals to AI. Uses 'Dynamic Model Discovery' to find a working brain.
+    REAL AI MODE (Option B - Self-Repairing):
+    Connects to Google Gemini. Automatically finds a working model
+    (Flash or Pro) to prevent 404 Model Not Found errors.
     """
     try:
-        # Safety Check: If key is missing, don't crash
+        # Safety Check: If key is missing, warn the user
         if not GEMINI_API_KEY:
             return "Configuration Error: API Key missing in .env file."
 
         genai.configure(api_key=GEMINI_API_KEY)
 
-        # ... (The rest of the code stays exactly the same) ...
-        # 1. List all models your key has access to
-        available_models = []
-        for m in genai.list_models():
-            if "generateContent" in m.supported_generation_methods:
-                available_models.append(m.name)
-
-        # 2. Pick the best one (Flash > Pro > 1.0)
+        # --- DYNAMIC MODEL DISCOVERY (The Fix) ---
+        # Instead of guessing 'gemini-1.5-flash', we ask Google what is available.
         target_model = None
-        preferred_order = [
-            "models/gemini-1.5-flash",
-            "models/gemini-1.5-flash-001",
-            "models/gemini-1.5-pro",
-            "models/gemini-pro",
-            "models/gemini-1.0-pro",
-        ]
+        available_models = []
 
-        # Check if any preferred model exists in your available list
-        for pref in preferred_order:
-            if pref in available_models:
-                target_model = pref
-                break
+        try:
+            for m in genai.list_models():
+                if "generateContent" in m.supported_generation_methods:
+                    available_models.append(m.name)
+                    # Priority 1: Flash (Fast & Free)
+                    if "flash" in m.name:
+                        target_model = m.name
+                        break
+                    # Priority 2: Standard Pro
+                    elif "gemini-pro" in m.name and not target_model:
+                        target_model = m.name
+        except Exception:
+            pass  # If listing fails, we fall back to default below
 
-        # Fallback: If none match, just grab the first one available
-        if not target_model and available_models:
-            target_model = available_models[0]
-
+        # Fallback if discovery didn't pick one
         if not target_model:
-            return "System Error: No AI models found for this API Key."
+            target_model = "models/gemini-pro"
 
-        # 3. Initialize the found model
+        # Initialize the found model
         model = genai.GenerativeModel(target_model)
 
-        # 4. The Prompt
+        # The Prompt (The Brain)
         prompt = f"""
-        You are VitalBot, a compassionate medical assistant.
+        You are VitalBot, a helpful medical assistant for a hospital dashboard.
         
-        Context:
-        - Patient: {patient_context['name']}
-        - Temp: {patient_context['temp']} C
-        - HR: {patient_context['hr']} bpm
-        - Status: {patient_context['status']}
+        Current Patient Context:
+        - Name: {patient_context.get('name', 'Unknown')}
+        - Temp: {patient_context.get('temp', 'N/A')} C
+        - Heart Rate: {patient_context.get('hr', 'N/A')} bpm
+        - Status: {patient_context.get('status', 'Unknown')}
         
-        Question: "{user_question}"
+        User Question: "{user_question}"
         
-        Answer nicely in max 2 sentences. If Status is High, warn them urgently.
+        Instructions:
+        - Answer as a medical professional.
+        - If the status is 'High' or 'Critical', warn the user immediately.
+        - Keep the answer under 3 sentences.
         """
 
         response = model.generate_content(prompt)
         return response.text
 
     except Exception as e:
+        # If internet fails or key is bad, return a fallback instead of crashing
         print(f"\n[AI ERROR LOG] {str(e)}\n")
-        return "I am having trouble connecting. Please try again in a moment."
+        return "I am having trouble connecting to the AI server. Please check your internet or API Key."
 
 
-# ... (The rest of the file generate_pdf_report etc stays the same) ...
-# (If you need the full file again with generate_pdf_report let me know,
-# otherwise just keep the bottom half the same)
 def generate_pdf_report(entry):
+    """
+    Generates a PDF Clinical Report.
+    """
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
 
@@ -98,18 +97,23 @@ def generate_pdf_report(entry):
     p.drawString(50, 660, f"Time: {entry.timestamp.strftime('%Y-%m-%d %H:%M')}")
 
     p.setFont("Helvetica-Bold", 14)
-    p.drawString(50, 600, "Vitals:")
+    p.drawString(50, 600, "Vitals Logged:")
     p.setFont("Helvetica", 12)
-    p.drawString(70, 580, f"• Temp: {entry.temp} C")
-    p.drawString(70, 560, f"• HR: {entry.hr} bpm")
-    p.drawString(70, 540, f"• RR: {entry.rr} /min")
-    p.drawString(70, 520, f"• WBC: {entry.wbc}")
+    p.drawString(70, 580, f"• Temperature: {entry.temp} C")
+    p.drawString(70, 560, f"• Heart Rate: {entry.hr} bpm")
+    p.drawString(70, 540, f"• Resp Rate: {entry.rr} /min")
+    p.drawString(70, 520, f"• WBC Count: {entry.wbc}")
 
-    p.rect(50, 430, 500, 70)
+    p.rect(50, 430, 500, 80)
     p.setFont("Helvetica-Bold", 14)
-    p.drawString(60, 480, f"STATUS: {entry.status.upper()}")
-    p.setFont("Helvetica-Oblique", 12)
-    p.drawString(60, 450, f"Advice: {entry.advice}")
+    p.drawString(60, 480, f"CURRENT STATUS: {entry.status.upper()}")
+
+    # Handle advice text
+    advice_text = entry.advice if entry.advice else "No specific advice logged."
+    p.setFont("Helvetica-Oblique", 11)
+    p.drawString(
+        60, 450, f"AI Advice: {advice_text[:80]}..."
+    )  # Truncate for PDF safety
 
     p.showPage()
     p.save()
@@ -124,6 +128,9 @@ def generate_pdf_report(entry):
 
 
 def generate_csv_report(all_entries):
+    """
+    Generates a CSV dump.
+    """
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(["ID", "Timestamp", "Name", "Temp", "HR", "Status", "Advice"])
