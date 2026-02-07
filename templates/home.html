@@ -1,9 +1,15 @@
 {% extends "base.html" %} {% block content %}
-<div class="alert alert-info d-flex justify-content-between align-items-center">
+
+<div
+  class="alert alert-info d-flex justify-content-between align-items-center shadow-sm"
+>
   <span>
     <i class="fa-solid fa-user-tag"></i> Logged in as:
     <strong>{{ current_user.username.upper() }}</strong>
     <span class="badge bg-dark ms-2">{{ current_user.role.upper() }}</span>
+  </span>
+  <span id="system-clock" class="small text-muted font-monospace">
+    <i class="fas fa-satellite-dish me-1"></i> System Online
   </span>
 </div>
 
@@ -20,7 +26,13 @@
         <form method="POST" action="/add_vitals">
           <div class="mb-3">
             <label class="form-label">Patient Name</label>
-            <input type="text" name="name" class="form-control" required />
+            <input
+              type="text"
+              name="name"
+              class="form-control"
+              required
+              placeholder="e.g. patient_om"
+            />
           </div>
           <div class="row">
             <div class="col-6 mb-3">
@@ -76,43 +88,163 @@
     class="{% if current_user.role == 'doctor' %}col-md-12{% else %}col-md-8{% endif %}"
   >
     {% if current_user.role in ['admin', 'doctor'] %}
-    <div class="card shadow-sm mb-4 border-success">
+    <div class="card shadow mb-4 border-bottom-primary">
       <div
-        class="card-header bg-success text-white d-flex justify-content-between align-items-center"
+        class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-white"
       >
-        <h5 class="mb-0">
-          <i class="fa-solid fa-chart-line"></i> Ward Analytics
-        </h5>
-        <a
-          href="/export_data"
-          class="btn btn-sm btn-light text-success fw-bold"
-        >
-          <i class="fa-solid fa-file-csv"></i> Export CSV
-        </a>
+        <h6 class="m-0 font-weight-bold text-primary">
+          <i class="fas fa-user-md me-2"></i> Real-Time Digital Twin (Patient:
+          patient_om)
+        </h6>
+        <span id="twinStatus" class="badge bg-secondary">Syncing...</span>
       </div>
-      <div class="card-body d-flex justify-content-around align-items-center">
-        <div class="text-center">
-          <h2 class="display-4 fw-bold text-success">{{ stats.total }}</h2>
-          <p class="text-muted">Total Patients</p>
-        </div>
-        <div style="width: 180px; height: 180px">
-          <canvas id="riskChart"></canvas>
-        </div>
-        <div>
-          <h5 class="text-danger fw-bold">
-            <i class="fa-solid fa-circle"></i> {{ stats.high }} Critical
-          </h5>
-          <h5 class="text-success fw-bold">
-            <i class="fa-solid fa-circle"></i> {{ stats.stable }} Stable
-          </h5>
+      <div
+        class="card-body text-center bg-white"
+        style="position: relative; overflow: hidden; height: 400px"
+      >
+        <div
+          style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+              linear-gradient(#e9ecef 1px, transparent 1px),
+              linear-gradient(90deg, #e9ecef 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+          "
+        ></div>
+
+        <div
+          class="digital-twin-container"
+          style="height: 100%; position: relative; z-index: 1"
+        >
+          <svg
+            viewBox="0 0 200 400"
+            style="
+              height: 100%;
+              filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.1));
+            "
+          >
+            <path
+              d="M100,30 C115,30 125,40 125,55 C125,75 115,85 100,85 C85,85 75,75 75,55 C75,40 85,30 100,30 Z 
+                             M65,100 C60,100 50,105 45,130 L35,220 C35,230 45,230 50,220 L60,150 L65,220 L75,360 C75,370 95,370 95,360 L95,260 L105,260 L105,360 C105,370 125,370 125,360 L135,220 L140,150 L150,220 C155,230 165,230 165,220 L155,130 C150,105 140,100 135,100 L65,100 Z"
+              fill="#f1f3f5"
+              stroke="#ced4da"
+              stroke-width="2"
+            />
+
+            <circle
+              id="organ-head"
+              cx="100"
+              cy="55"
+              r="20"
+              fill="#e9ecef"
+              opacity="0.8"
+            />
+
+            <path
+              id="organ-lungs"
+              d="M85,110 Q75,140 85,170 Q95,140 85,110 M115,110 Q125,140 115,170 Q105,140 115,110"
+              fill="#e9ecef"
+              stroke="#adb5bd"
+              stroke-width="1"
+              opacity="0.8"
+            />
+
+            <path
+              id="organ-heart"
+              d="M100,145 L95,140 A5,5 0 0,1 100,135 A5,5 0 0,1 105,140 Z"
+              transform="scale(2.5) translate(-60, -85)"
+              fill="#e9ecef"
+              opacity="0.8"
+            >
+              <animateTransform
+                attributeName="transform"
+                type="scale"
+                values="2.5;2.8;2.5"
+                dur="1s"
+                repeatCount="indefinite"
+              />
+            </path>
+
+            <text
+              x="100"
+              y="390"
+              text-anchor="middle"
+              fill="#adb5bd"
+              font-size="10"
+              font-family="sans-serif"
+            >
+              LIVE SCAN MODE
+            </text>
+          </svg>
+
+          <div
+            style="position: absolute; top: 20px; left: 20px; text-align: left"
+          >
+            <div
+              class="card p-2 shadow-sm border-left-info mb-2"
+              style="border-left: 4px solid #36b9cc"
+            >
+              <small class="text-muted fw-bold">TEMPERATURE</small>
+              <div>
+                <span id="val-temp" class="h4 text-dark fw-bold">--</span>
+                <span class="text-muted small">°C</span>
+              </div>
+            </div>
+            <div
+              class="card p-2 shadow-sm border-left-primary"
+              style="border-left: 4px solid #4e73df"
+            >
+              <small class="text-muted fw-bold">RESPIRATION</small>
+              <div>
+                <span id="val-rr" class="h4 text-dark fw-bold">--</span>
+                <span class="text-muted small">/min</span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            style="
+              position: absolute;
+              top: 20px;
+              right: 20px;
+              text-align: right;
+            "
+          >
+            <div
+              class="card p-2 shadow-sm border-left-danger mb-2"
+              style="border-left: 4px solid #e74a3b"
+            >
+              <small class="text-muted fw-bold">HEART RATE</small>
+              <div>
+                <span id="val-hr" class="h4 text-dark fw-bold">--</span>
+                <span class="text-muted small">BPM</span>
+              </div>
+            </div>
+            <div class="card p-2 shadow-sm">
+              <small class="text-muted fw-bold">STATUS</small>
+              <div class="mt-1">
+                <span id="val-status" class="badge bg-secondary">--</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
     {% endif %}
 
     <div class="card shadow-sm">
-      <div class="card-header bg-light">
-        <h5 class="mb-0"><i class="fa-solid fa-list"></i> Patient History</h5>
+      <div class="card-header bg-light d-flex justify-content-between">
+        <h5 class="mb-0">
+          <i class="fa-solid fa-list"></i> Recent Ward Activity
+        </h5>
+        <a href="/export_data" class="btn btn-sm btn-outline-success">
+          <i class="fa-solid fa-file-csv"></i> Export Data
+        </a>
       </div>
       <div class="card-body p-0">
         <table class="table table-hover mb-0">
@@ -120,9 +252,9 @@
             <tr>
               <th>Time</th>
               <th>Patient</th>
-              <th>Vitals</th>
-              <th>AI Risk Assessment</th>
-              <th>Report</th>
+              <th>Vitals (T/HR/RR)</th>
+              <th>AI Assessment</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -135,7 +267,7 @@
                 {% if row.status == 'High' %}
                 <span class="badge bg-danger">SEPSIS ALERT</span>
                 {% elif row.status == 'Warning' %}
-                <span class="badge bg-warning text-dark">Check Fever/HR</span>
+                <span class="badge bg-warning text-dark">Warning</span>
                 {% else %}
                 <span class="badge bg-success">Stable</span>
                 {% endif %}
@@ -145,7 +277,7 @@
                   href="/generate_pdf/{{ row.id }}"
                   class="btn btn-sm btn-outline-dark"
                 >
-                  <i class="fa-solid fa-file-pdf"></i> PDF
+                  <i class="fa-solid fa-file-pdf"></i> Report
                 </a>
               </td>
             </tr>
@@ -158,25 +290,93 @@
 </div>
 
 {% if current_user.role in ['admin', 'doctor'] %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  const ctx = document.getElementById('riskChart').getContext('2d');
-  new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-          labels: ['Critical', 'Stable'],
-          datasets: [{
-              data: [{{ stats.high }}, {{ stats.stable }}],
-              backgroundColor: ['#dc3545', '#198754'],
-              borderWidth: 0
-          }]
-      },
-      options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '70%',
-          plugins: { legend: { display: false } }
-      }
-  });
+  function updateDigitalTwin() {
+    // Fetch data for Patient ID 4 (patient_om)
+    fetch("/api/patient_history/4")
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.error) {
+          document.getElementById("twinStatus").innerText = "Offline";
+          return;
+        }
+
+        const latest = data.latest_vitals;
+
+        // 1. Update Numbers
+        document.getElementById("val-temp").innerText = latest.temp;
+        document.getElementById("val-hr").innerText = latest.hr;
+        document.getElementById("val-rr").innerText = latest.rr;
+
+        const statusBadge = document.getElementById("val-status");
+        statusBadge.innerText = latest.status.toUpperCase();
+
+        // Color Coding the Status Badge
+        if (latest.status === "High") {
+          statusBadge.className = "badge bg-danger pulsing-badge";
+        } else if (latest.status === "Warning") {
+          statusBadge.className = "badge bg-warning text-dark";
+        } else {
+          statusBadge.className = "badge bg-success";
+        }
+
+        // 2. VISUAL DIAGNOSTICS LOGIC
+
+        // Heart Logic (Tachycardia Animation)
+        const heart = document.getElementById("organ-heart");
+        const pulseAnim = heart.querySelector("animateTransform");
+
+        if (latest.hr > 100) {
+          heart.setAttribute("fill", "#e74a3b"); // Red
+          heart.setAttribute("opacity", "1");
+          pulseAnim.setAttribute("dur", "0.4s"); // Fast Pulse
+        } else {
+          heart.setAttribute("fill", "#e74a3b");
+          heart.setAttribute("opacity", "0.3"); // Faint Red
+          pulseAnim.setAttribute("dur", "1.2s"); // Slow Pulse
+        }
+
+        // Head Logic (Fever)
+        const head = document.getElementById("organ-head");
+        if (latest.temp > 38.0) {
+          head.setAttribute("fill", "#f6c23e"); // Orange (Fever)
+          head.setAttribute("opacity", "0.6");
+        } else if (latest.temp < 36.0) {
+          head.setAttribute("fill", "#36b9cc"); // Cyan (Hypothermia)
+          head.setAttribute("opacity", "0.6");
+        } else {
+          head.setAttribute("fill", "#e9ecef"); // Normal Grey
+          head.setAttribute("opacity", "0.8");
+        }
+
+        // Lung Logic (Respiration)
+        const lungs = document.getElementById("organ-lungs");
+        if (latest.rr > 22) {
+          lungs.setAttribute("fill", "#4e73df"); // Blue
+          lungs.setAttribute("opacity", "0.6");
+        } else {
+          lungs.setAttribute("fill", "#e9ecef"); // Grey
+          lungs.setAttribute("opacity", "0.8");
+        }
+
+        // Status Badge
+        document.getElementById("twinStatus").innerText = "Live Sync Active";
+        document.getElementById("twinStatus").className = "badge bg-success";
+
+        // System Clock
+        document.getElementById("system-clock").innerHTML =
+          '<i class="fas fa-satellite-dish me-1 text-success"></i> Connected: ' +
+          new Date().toLocaleTimeString();
+      })
+      .catch((err) => {
+        console.log("Waiting for data stream...");
+      });
+  }
+
+  // Refresh every 10 seconds
+  setInterval(updateDigitalTwin, 10000);
+
+  // Initial run
+  updateDigitalTwin();
 </script>
 {% endif %} {% endblock %}

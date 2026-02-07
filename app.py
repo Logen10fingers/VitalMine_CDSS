@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import (
     LoginManager,
     login_user,
@@ -227,7 +227,7 @@ def export_data():
     return generate_csv_report(Entry.query.order_by(Entry.timestamp.desc()).all())
 
 
-# --- NEW: CHATBOT ROUTE (PHASE 19) ---
+# --- PHASE 19: CHATBOT ROUTE ---
 @app.route("/chat_with_ai", methods=["POST"])
 @login_required
 def chat_with_ai():
@@ -254,6 +254,44 @@ def chat_with_ai():
     ai_response = ask_medical_ai(user_question, context)
 
     return {"response": ai_response}
+
+
+# --- PHASE 21: DIGITAL TWIN API ---
+@app.route("/api/patient_history/<int:user_id>")
+@login_required
+def get_patient_history(user_id):
+    """
+    Fetches vitals for the Digital Twin & Live Graph.
+    Includes Respiration Rate (RR) for lung visualization.
+    """
+    # 1. Get last 20 entries for this patient
+    entries = (
+        Entry.query.filter_by(user_id=user_id)
+        .order_by(Entry.timestamp.desc())
+        .limit(20)
+        .all()
+    )
+    entries = entries[::-1]  # Reverse to Chronological order
+
+    if not entries:
+        return jsonify({"error": "No data"})
+
+    latest = entries[-1]
+
+    return jsonify(
+        {
+            "timestamps": [e.timestamp.strftime("%H:%M:%S") for e in entries],
+            "heart_rates": [e.hr for e in entries],
+            "temps": [e.temp for e in entries],
+            "respiration_rates": [e.rr for e in entries],  # Added for Lungs
+            "latest_vitals": {
+                "hr": latest.hr,
+                "temp": latest.temp,
+                "rr": latest.rr,
+                "status": latest.status,
+            },
+        }
+    )
 
 
 if __name__ == "__main__":
