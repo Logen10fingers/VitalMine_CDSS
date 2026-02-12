@@ -8,6 +8,8 @@ from flask_login import (
 )
 import joblib
 import pandas as pd
+import smtplib  # NEW: For Notification Service
+from datetime import datetime
 
 # --- MVC IMPORTS ---
 from models import db, User, Entry
@@ -35,6 +37,23 @@ except:
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
+
+
+# --- NOTIFICATION SERVICE (NEW) ---
+def send_emergency_alert(patient_name, vitals, status):
+    """
+    Simulates sending an SMTP email to the Doctor/Admin.
+    This fulfills the 'Notification Service' bubble in the DFD.
+    """
+    # In a real app, you would use app.config['MAIL_USERNAME']
+    print("\n" + "=" * 50)
+    print(f" [NOTIFICATION SERVICE] 🚨 URGENT ALERT: {status}")
+    print(f" To: admin@vitalmine.com")
+    print(f" Subject: CRITICAL VITALS - Patient {patient_name}")
+    print(f" Body: Patient {patient_name} has triggered a {status} alert.")
+    print(f" Vitals: Temp={vitals['temp']}, HR={vitals['hr']}")
+    print("=" * 50 + "\n")
+    return True
 
 
 # --- ROUTES ---
@@ -163,32 +182,42 @@ def add_vitals():
         if model.predict(df)[0] == 1:
             ai_risk = "High"
 
+    # --- UPDATED LOGIC FOR NOTIFICATION SERVICE ---
     status = "Stable"
     advice_text = "Vitals are normal. Continue standard care."
 
     if ai_risk == "High":
-        status = "High"
+        status = "Critical"  # Changed to Critical for emphasis
         advice_text = (
             "CRITICAL: Sepsis signs detected. Proceed to Emergency immediately."
         )
-        print(f"\n[SERVER LOG] 📧 SMTP WORKER: Alert sent for {patient_name}")
         flash(f"🚨 EMERGENCY PROTOCOL: Alert sent for {patient_name}.", "danger")
+
+        # Trigger Notification Service
+        send_emergency_alert(patient_name, {"temp": temp, "hr": hr}, status)
+
     elif temp > 38.0:
         status = "Warning"
         advice_text = "High Fever detected. Take antipyretics."
         flash(f"⚠️ High Fever Warning for {patient_name}.", "warning")
+        # Optional: Send Warning Alert
+        send_emergency_alert(patient_name, {"temp": temp, "hr": hr}, status)
+
     elif temp < 36.0:
         status = "Warning"
         advice_text = "Hypothermia Risk. Keep warm."
         flash(f"⚠️ Hypothermia Warning for {patient_name}.", "warning")
+
     elif hr > 100:
         status = "Warning"
         advice_text = "Tachycardia. Rest and re-check."
         flash(f"⚠️ Tachycardia Warning for {patient_name}.", "warning")
+
     elif rr > 22:
         status = "Warning"
         advice_text = "Hyperventilation. Monitor breathing."
         flash(f"⚠️ Respiratory Warning for {patient_name}.", "warning")
+
     else:
         flash(f"✅ Vitals logged for {patient_name}.", "success")
 
@@ -248,7 +277,12 @@ def chat_with_ai():
             "status": last_entry.status,
         }
     else:
-        context = {"name": "Unknown", "temp": "N/A", "hr": "N/A", "status": "Unknown"}
+        context = {
+            "name": "Unknown",
+            "temp": "N/A",
+            "hr": "N/A",
+            "status": "Unknown",
+        }
 
     # Ask the Brain (in utils.py)
     ai_response = ask_medical_ai(user_question, context)
@@ -298,13 +332,38 @@ if __name__ == "__main__":
     with app.app_context():
         db.create_all()
         if not User.query.filter_by(username="admin").first():
-            db.session.add(User(username="admin", password="password123", role="admin"))
+            # NEW: Added fake emails for the demo
             db.session.add(
-                User(username="doctor", password="password123", role="doctor")
+                User(
+                    username="admin",
+                    email="admin@hospital.com",
+                    password="password123",
+                    role="admin",
+                )
             )
-            db.session.add(User(username="nurse", password="password123", role="nurse"))
             db.session.add(
-                User(username="patient_om", password="password123", role="patient")
+                User(
+                    username="doctor",
+                    email="doctor@hospital.com",
+                    password="password123",
+                    role="doctor",
+                )
+            )
+            db.session.add(
+                User(
+                    username="nurse",
+                    email="nurse@hospital.com",
+                    password="password123",
+                    role="nurse",
+                )
+            )
+            db.session.add(
+                User(
+                    username="patient_om",
+                    email="om@gmail.com",
+                    password="password123",
+                    role="patient",
+                )
             )
             db.session.commit()
 
