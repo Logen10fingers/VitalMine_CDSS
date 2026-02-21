@@ -6,6 +6,10 @@ from flask_login import (
     logout_user,
     current_user,
 )
+from werkzeug.security import (
+    generate_password_hash,
+    check_password_hash,
+)  # NEW: For secure passwords
 import joblib
 import pandas as pd
 import smtplib  # NEW: For Notification Service
@@ -39,13 +43,12 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 
-# --- NOTIFICATION SERVICE (NEW) ---
+# --- NOTIFICATION SERVICE ---
 def send_emergency_alert(patient_name, vitals, status):
     """
     Simulates sending an SMTP email to the Doctor/Admin.
     This fulfills the 'Notification Service' bubble in the DFD.
     """
-    # In a real app, you would use app.config['MAIL_USERNAME']
     print("\n" + "=" * 50)
     print(f" [NOTIFICATION SERVICE] 🚨 URGENT ALERT: {status}")
     print(f" To: admin@vitalmine.com")
@@ -127,9 +130,72 @@ def patients_directory():
                 "username": p.username,
                 "status": status,
                 "last_seen": last_seen,
+                "age": p.age,
+                "gender": p.gender,
+                "blood_group": p.blood_group,  # NEW: Sent to UI
+                "contact": p.contact,  # NEW: Sent to UI
             }
         )
     return render_template("patients_list.html", patients=patient_list)
+
+
+# --- PHASE 23: REGISTRATION ROUTE ---
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form.get("username")
+        email = request.form.get("email")
+        password = request.form.get("password")
+        role = request.form.get("role", "patient")
+
+        # Demographics & Realistic Fields
+        age = request.form.get("age")
+        gender = request.form.get("gender")
+        blood_group = request.form.get("blood_group")
+        contact = request.form.get("contact")
+        emp_id = request.form.get("emp_id")
+        department = request.form.get("department")
+
+        # Validation
+        if User.query.filter_by(username=username).first():
+            flash("Username already exists.", "danger")
+            return redirect(url_for("register"))
+        if email and User.query.filter_by(email=email).first():
+            flash("Email already registered.", "danger")
+            return redirect(url_for("register"))
+
+        hashed_password = generate_password_hash(password)
+        age_val = int(age) if age and age.isdigit() else None
+
+        # Determine which fields to save based on role
+        if role == "patient":
+            emp_id = None
+            department = None
+        else:
+            age_val = None
+            gender = None
+            blood_group = None
+            contact = None
+
+        new_user = User(
+            username=username,
+            email=email,
+            password=hashed_password,
+            role=role,
+            age=age_val,
+            gender=gender,
+            blood_group=blood_group,
+            contact=contact,
+            emp_id=emp_id,
+            department=department,
+        )
+        db.session.add(new_user)
+        db.session.commit()
+
+        flash("Registration successful! Please log in.", "success")
+        return redirect(url_for("login"))
+
+    return render_template("register.html")
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -138,7 +204,9 @@ def login():
         username = request.form.get("username")
         password = request.form.get("password")
         user = User.query.filter_by(username=username).first()
-        if user and user.password == password:
+
+        # Phase 23: Now using secure password checking
+        if user and check_password_hash(user.password, password):
             login_user(user)
             return redirect(
                 url_for("patient_dashboard" if user.role == "patient" else "home")
@@ -182,25 +250,21 @@ def add_vitals():
         if model.predict(df)[0] == 1:
             ai_risk = "High"
 
-    # --- UPDATED LOGIC FOR NOTIFICATION SERVICE ---
     status = "Stable"
     advice_text = "Vitals are normal. Continue standard care."
 
     if ai_risk == "High":
-        status = "Critical"  # Changed to Critical for emphasis
+        status = "Critical"
         advice_text = (
             "CRITICAL: Sepsis signs detected. Proceed to Emergency immediately."
         )
         flash(f"🚨 EMERGENCY PROTOCOL: Alert sent for {patient_name}.", "danger")
-
-        # Trigger Notification Service
         send_emergency_alert(patient_name, {"temp": temp, "hr": hr}, status)
 
     elif temp > 38.0:
         status = "Warning"
         advice_text = "High Fever detected. Take antipyretics."
         flash(f"⚠️ High Fever Warning for {patient_name}.", "warning")
-        # Optional: Send Warning Alert
         send_emergency_alert(patient_name, {"temp": temp, "hr": hr}, status)
 
     elif temp < 36.0:
@@ -256,13 +320,11 @@ def export_data():
     return generate_csv_report(Entry.query.order_by(Entry.timestamp.desc()).all())
 
 
-# --- PHASE 19: CHATBOT ROUTE ---
 @app.route("/chat_with_ai", methods=["POST"])
 @login_required
 def chat_with_ai():
     user_question = request.json.get("question")
 
-    # Get the latest patient data from DB
     last_entry = (
         Entry.query.filter_by(user_id=current_user.id)
         .order_by(Entry.timestamp.desc())
@@ -284,28 +346,20 @@ def chat_with_ai():
             "status": "Unknown",
         }
 
-    # Ask the Brain (in utils.py)
     ai_response = ask_medical_ai(user_question, context)
-
     return {"response": ai_response}
 
 
-# --- PHASE 21: DIGITAL TWIN API ---
 @app.route("/api/patient_history/<int:user_id>")
 @login_required
 def get_patient_history(user_id):
-    """
-    Fetches vitals for the Digital Twin & Live Graph.
-    Includes Respiration Rate (RR) for lung visualization.
-    """
-    # 1. Get last 20 entries for this patient
     entries = (
         Entry.query.filter_by(user_id=user_id)
         .order_by(Entry.timestamp.desc())
         .limit(20)
         .all()
     )
-    entries = entries[::-1]  # Reverse to Chronological order
+    entries = entries[::-1]
 
     if not entries:
         return jsonify({"error": "No data"})
@@ -317,7 +371,7 @@ def get_patient_history(user_id):
             "timestamps": [e.timestamp.strftime("%H:%M:%S") for e in entries],
             "heart_rates": [e.hr for e in entries],
             "temps": [e.temp for e in entries],
-            "respiration_rates": [e.rr for e in entries],  # Added for Lungs
+            "respiration_rates": [e.rr for e in entries],
             "latest_vitals": {
                 "hr": latest.hr,
                 "temp": latest.temp,
@@ -332,37 +386,49 @@ if __name__ == "__main__":
     with app.app_context():
         db.create_all()
         if not User.query.filter_by(username="admin").first():
-            # NEW: Added fake emails for the demo
+            # PHASE 23: Updated default users to use hashed passwords
+            default_password = generate_password_hash("password123")
+
             db.session.add(
                 User(
                     username="admin",
                     email="admin@hospital.com",
-                    password="password123",
+                    password=default_password,
                     role="admin",
+                    emp_id="ADMIN-001",
+                    department="IT & Systems",
                 )
             )
             db.session.add(
                 User(
                     username="doctor",
                     email="doctor@hospital.com",
-                    password="password123",
+                    password=default_password,
                     role="doctor",
+                    emp_id="MD-204",
+                    department="Emergency",
                 )
             )
             db.session.add(
                 User(
                     username="nurse",
                     email="nurse@hospital.com",
-                    password="password123",
+                    password=default_password,
                     role="nurse",
+                    emp_id="RN-883",
+                    department="ICU",
                 )
             )
             db.session.add(
                 User(
                     username="patient_om",
                     email="om@gmail.com",
-                    password="password123",
+                    password=default_password,
                     role="patient",
+                    age=21,
+                    gender="Male",
+                    blood_group="O+",
+                    contact="9876543210",
                 )
             )
             db.session.commit()
