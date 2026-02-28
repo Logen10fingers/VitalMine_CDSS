@@ -1,7 +1,8 @@
 {% extends "base.html" %} {% block content %}
 
 <div
-  class="alert alert-info d-flex justify-content-between align-items-center shadow-sm"
+  class="alert alert-info d-flex justify-content-between align-items-center shadow-sm mb-4"
+  style="border-left: 5px solid #0dcaf0"
 >
   <span>
     <i class="fa-solid fa-user-tag"></i> Logged in as:
@@ -13,19 +14,107 @@
   </span>
 </div>
 
+{% if current_user.role in ['admin', 'doctor'] %}
+<div class="row mb-4">
+  <div class="col-md-4 mb-3">
+    <div
+      class="card shadow-sm h-100 py-2"
+      style="border-left: 4px solid #4e73df"
+    >
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col">
+            <div
+              class="text-xs fw-bold text-primary text-uppercase mb-1"
+              style="font-size: 0.8rem"
+            >
+              Total Ward Logs
+            </div>
+            <div class="h3 mb-0 fw-bold text-dark">
+              {{ stats.total if stats else 0 }}
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="fa-solid fa-server fa-2x text-muted opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4 mb-3">
+    <div
+      class="card shadow-sm h-100 py-2"
+      style="border-left: 4px solid #e74a3b"
+    >
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col">
+            <div
+              class="text-xs fw-bold text-danger text-uppercase mb-1"
+              style="font-size: 0.8rem"
+            >
+              Critical Alerts (Sepsis)
+            </div>
+            <div class="h3 mb-0 fw-bold text-dark">
+              {{ stats.high if stats else 0 }}
+            </div>
+          </div>
+          <div class="col-auto">
+            <i
+              class="fa-solid fa-triangle-exclamation fa-2x text-muted opacity-50"
+            ></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4 mb-3">
+    <div
+      class="card shadow-sm h-100 py-2"
+      style="border-left: 4px solid #1cc88a"
+    >
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col">
+            <div
+              class="text-xs fw-bold text-success text-uppercase mb-1"
+              style="font-size: 0.8rem"
+            >
+              Stable Readings
+            </div>
+            <div class="h3 mb-0 fw-bold text-dark">
+              {{ stats.stable if stats else 0 }}
+            </div>
+          </div>
+          <div class="col-auto">
+            <i
+              class="fa-solid fa-heart-circle-check fa-2x text-muted opacity-50"
+            ></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <div class="row">
   {% if current_user.role in ['admin', 'nurse'] %}
   <div class="col-md-4">
-    <div class="card shadow-sm border-primary">
+    <div class="card shadow-sm border-0 mb-4">
       <div class="card-header bg-primary text-white">
         <h5 class="mb-0">
-          <i class="fa-solid fa-user-plus"></i> New Vitals Entry
+          <i class="fa-solid fa-stethoscope"></i> New Vitals Entry
         </h5>
       </div>
-      <div class="card-body">
+      <div class="card-body bg-white">
         <form method="POST" action="/add_vitals">
           <div class="mb-3">
-            <label class="form-label">Patient Name</label>
+            <label class="form-label fw-bold text-muted small"
+              >PATIENT NAME</label
+            >
             <input
               type="text"
               name="name"
@@ -36,7 +125,9 @@
           </div>
           <div class="row">
             <div class="col-6 mb-3">
-              <label class="form-label">Temp (°C)</label>
+              <label class="form-label fw-bold text-muted small"
+                >TEMP (°C)</label
+              >
               <input
                 type="number"
                 step="0.1"
@@ -46,7 +137,9 @@
               />
             </div>
             <div class="col-6 mb-3">
-              <label class="form-label">Heart Rate</label>
+              <label class="form-label fw-bold text-muted small"
+                >HEART RATE</label
+              >
               <input
                 type="number"
                 name="heart_rate"
@@ -57,7 +150,9 @@
           </div>
           <div class="row">
             <div class="col-6 mb-3">
-              <label class="form-label">Resp. Rate</label>
+              <label class="form-label fw-bold text-muted small"
+                >RESP. RATE</label
+              >
               <input
                 type="number"
                 name="resp_rate"
@@ -66,7 +161,9 @@
               />
             </div>
             <div class="col-6 mb-3">
-              <label class="form-label">WBC Count</label>
+              <label class="form-label fw-bold text-muted small"
+                >WBC COUNT</label
+              >
               <input
                 type="number"
                 name="wbc_count"
@@ -75,7 +172,7 @@
               />
             </div>
           </div>
-          <button type="submit" class="btn btn-primary w-100">
+          <button type="submit" class="btn btn-primary w-100 fw-bold">
             <i class="fa-solid fa-microscope"></i> Analyze (AI)
           </button>
         </form>
@@ -88,19 +185,25 @@
     class="{% if current_user.role == 'doctor' %}col-md-12{% else %}col-md-8{% endif %}"
   >
     {% if current_user.role in ['admin', 'doctor'] %}
-    <div class="card shadow mb-4 border-bottom-primary">
+    <div class="card shadow-sm mb-4 border-0">
       <div
-        class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-white"
+        class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-white border-bottom"
       >
-        <h6 class="m-0 font-weight-bold text-primary">
-          <i class="fas fa-user-md me-2"></i> Real-Time Digital Twin (Patient:
-          patient_om)
+        <h6 class="m-0 fw-bold text-primary">
+          <i class="fas fa-street-view me-2"></i> Real-Time Digital Twin
+          (Patient: patient_om)
         </h6>
         <span id="twinStatus" class="badge bg-secondary">Syncing...</span>
       </div>
       <div
         class="card-body text-center bg-white"
-        style="position: relative; overflow: hidden; height: 400px"
+        style="
+          position: relative;
+          overflow: hidden;
+          height: 400px;
+          border-bottom-left-radius: 8px;
+          border-bottom-right-radius: 8px;
+        "
       >
         <div
           style="
@@ -129,13 +232,11 @@
             "
           >
             <path
-              d="M100,30 C115,30 125,40 125,55 C125,75 115,85 100,85 C85,85 75,75 75,55 C75,40 85,30 100,30 Z 
-                             M65,100 C60,100 50,105 45,130 L35,220 C35,230 45,230 50,220 L60,150 L65,220 L75,360 C75,370 95,370 95,360 L95,260 L105,260 L105,360 C105,370 125,370 125,360 L135,220 L140,150 L150,220 C155,230 165,230 165,220 L155,130 C150,105 140,100 135,100 L65,100 Z"
+              d="M100,30 C115,30 125,40 125,55 C125,75 115,85 100,85 C85,85 75,75 75,55 C75,40 85,30 100,30 Z M65,100 C60,100 50,105 45,130 L35,220 C35,230 45,230 50,220 L60,150 L65,220 L75,360 C75,370 95,370 95,360 L95,260 L105,260 L105,360 C105,370 125,370 125,360 L135,220 L140,150 L150,220 C155,230 165,230 165,220 L155,130 C150,105 140,100 135,100 L65,100 Z"
               fill="#f1f3f5"
               stroke="#ced4da"
               stroke-width="2"
             />
-
             <circle
               id="organ-head"
               cx="100"
@@ -144,7 +245,6 @@
               fill="#e9ecef"
               opacity="0.8"
             />
-
             <path
               id="organ-lungs"
               d="M85,110 Q75,140 85,170 Q95,140 85,110 M115,110 Q125,140 115,170 Q105,140 115,110"
@@ -153,7 +253,6 @@
               stroke-width="1"
               opacity="0.8"
             />
-
             <path
               id="organ-heart"
               d="M100,145 L95,140 A5,5 0 0,1 100,135 A5,5 0 0,1 105,140 Z"
@@ -169,14 +268,13 @@
                 repeatCount="indefinite"
               />
             </path>
-
             <text
               x="100"
               y="390"
               text-anchor="middle"
               fill="#adb5bd"
               font-size="10"
-              font-family="sans-serif"
+              font-family="sans-serif fw-bold"
             >
               LIVE SCAN MODE
             </text>
@@ -186,7 +284,7 @@
             style="position: absolute; top: 20px; left: 20px; text-align: left"
           >
             <div
-              class="card p-2 shadow-sm border-left-info mb-2"
+              class="card p-2 shadow-sm mb-2"
               style="border-left: 4px solid #36b9cc"
             >
               <small class="text-muted fw-bold">TEMPERATURE</small>
@@ -196,7 +294,7 @@
               </div>
             </div>
             <div
-              class="card p-2 shadow-sm border-left-primary"
+              class="card p-2 shadow-sm"
               style="border-left: 4px solid #4e73df"
             >
               <small class="text-muted fw-bold">RESPIRATION</small>
@@ -216,7 +314,7 @@
             "
           >
             <div
-              class="card p-2 shadow-sm border-left-danger mb-2"
+              class="card p-2 shadow-sm mb-2"
               style="border-left: 4px solid #e74a3b"
             >
               <small class="text-muted fw-bold">HEART RATE</small>
@@ -237,53 +335,69 @@
     </div>
     {% endif %}
 
-    <div class="card shadow-sm">
-      <div class="card-header bg-light d-flex justify-content-between">
-        <h5 class="mb-0">
-          <i class="fa-solid fa-list"></i> Recent Ward Activity
-        </h5>
-        <a href="/export_data" class="btn btn-sm btn-outline-success">
+    <div class="card shadow-sm border-0">
+      <div
+        class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3"
+      >
+        <h6 class="m-0 fw-bold text-dark">
+          <i class="fa-solid fa-list-check text-primary me-2"></i> Recent Ward
+          Activity
+        </h6>
+        <a href="/export_data" class="btn btn-sm btn-success fw-bold">
           <i class="fa-solid fa-file-csv"></i> Export Data
         </a>
       </div>
-      <div class="card-body p-0">
-        <table class="table table-hover mb-0">
-          <thead class="table-secondary">
-            <tr>
-              <th>Time</th>
-              <th>Patient</th>
-              <th>Vitals (T/HR/RR)</th>
-              <th>AI Assessment</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for row in history %}
-            <tr class="risk-{{ row.status }}">
-              <td>{{ row.time }}</td>
-              <td><strong>{{ row.name }}</strong></td>
-              <td>{{ row.vitals }}</td>
-              <td>
-                {% if row.status == 'High' %}
-                <span class="badge bg-danger">SEPSIS ALERT</span>
-                {% elif row.status == 'Warning' %}
-                <span class="badge bg-warning text-dark">Warning</span>
-                {% else %}
-                <span class="badge bg-success">Stable</span>
-                {% endif %}
-              </td>
-              <td>
-                <a
-                  href="/generate_pdf/{{ row.id }}"
-                  class="btn btn-sm btn-outline-dark"
-                >
-                  <i class="fa-solid fa-file-pdf"></i> Report
-                </a>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle datatable w-100">
+            <thead class="table-light text-muted small">
+              <tr>
+                <th>TIME</th>
+                <th>PATIENT</th>
+                <th>VITALS (T/HR/RR)</th>
+                <th>AI ASSESSMENT</th>
+                <th>ACTION</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in history %}
+              <tr>
+                <td class="text-muted">{{ row.time }}</td>
+                <td><span class="fw-bold text-dark">{{ row.name }}</span></td>
+                <td>
+                  <span class="badge bg-light text-dark border"
+                    >{{ row.vitals }}</span
+                  >
+                </td>
+                <td>
+                  {% if row.status == 'High' or row.status == 'Critical' %}
+                  <span class="badge-critical rounded px-2 py-1"
+                    ><i class="fa-solid fa-triangle-exclamation"></i> SEPSIS
+                    ALERT</span
+                  >
+                  {% elif row.status == 'Warning' %}
+                  <span class="badge bg-warning text-dark"
+                    ><i class="fa-solid fa-bell"></i> Warning</span
+                  >
+                  {% else %}
+                  <span class="badge bg-success"
+                    ><i class="fa-solid fa-check"></i> Stable</span
+                  >
+                  {% endif %}
+                </td>
+                <td>
+                  <a
+                    href="/generate_pdf/{{ row.id }}"
+                    class="btn btn-sm btn-outline-secondary"
+                  >
+                    <i class="fa-solid fa-file-pdf text-danger"></i> Report
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -292,7 +406,6 @@
 {% if current_user.role in ['admin', 'doctor'] %}
 <script>
   function updateDigitalTwin() {
-    // Fetch data for Patient ID 4 (patient_om)
     fetch("/api/patient_history/4")
       .then((response) => response.json())
       .then((data) => {
@@ -303,7 +416,6 @@
 
         const latest = data.latest_vitals;
 
-        // 1. Update Numbers
         document.getElementById("val-temp").innerText = latest.temp;
         document.getElementById("val-hr").innerText = latest.hr;
         document.getElementById("val-rr").innerText = latest.rr;
@@ -311,59 +423,50 @@
         const statusBadge = document.getElementById("val-status");
         statusBadge.innerText = latest.status.toUpperCase();
 
-        // Color Coding the Status Badge
-        if (latest.status === "High") {
-          statusBadge.className = "badge bg-danger pulsing-badge";
+        if (latest.status === "High" || latest.status === "Critical") {
+          statusBadge.className = "badge-critical rounded px-2 py-1";
         } else if (latest.status === "Warning") {
           statusBadge.className = "badge bg-warning text-dark";
         } else {
           statusBadge.className = "badge bg-success";
         }
 
-        // 2. VISUAL DIAGNOSTICS LOGIC
-
-        // Heart Logic (Tachycardia Animation)
         const heart = document.getElementById("organ-heart");
         const pulseAnim = heart.querySelector("animateTransform");
-
         if (latest.hr > 100) {
-          heart.setAttribute("fill", "#e74a3b"); // Red
+          heart.setAttribute("fill", "#e74a3b");
           heart.setAttribute("opacity", "1");
-          pulseAnim.setAttribute("dur", "0.4s"); // Fast Pulse
+          pulseAnim.setAttribute("dur", "0.4s");
         } else {
           heart.setAttribute("fill", "#e74a3b");
-          heart.setAttribute("opacity", "0.3"); // Faint Red
-          pulseAnim.setAttribute("dur", "1.2s"); // Slow Pulse
+          heart.setAttribute("opacity", "0.3");
+          pulseAnim.setAttribute("dur", "1.2s");
         }
 
-        // Head Logic (Fever)
         const head = document.getElementById("organ-head");
         if (latest.temp > 38.0) {
-          head.setAttribute("fill", "#f6c23e"); // Orange (Fever)
+          head.setAttribute("fill", "#f6c23e");
           head.setAttribute("opacity", "0.6");
         } else if (latest.temp < 36.0) {
-          head.setAttribute("fill", "#36b9cc"); // Cyan (Hypothermia)
+          head.setAttribute("fill", "#36b9cc");
           head.setAttribute("opacity", "0.6");
         } else {
-          head.setAttribute("fill", "#e9ecef"); // Normal Grey
+          head.setAttribute("fill", "#e9ecef");
           head.setAttribute("opacity", "0.8");
         }
 
-        // Lung Logic (Respiration)
         const lungs = document.getElementById("organ-lungs");
         if (latest.rr > 22) {
-          lungs.setAttribute("fill", "#4e73df"); // Blue
+          lungs.setAttribute("fill", "#4e73df");
           lungs.setAttribute("opacity", "0.6");
         } else {
-          lungs.setAttribute("fill", "#e9ecef"); // Grey
+          lungs.setAttribute("fill", "#e9ecef");
           lungs.setAttribute("opacity", "0.8");
         }
 
-        // Status Badge
         document.getElementById("twinStatus").innerText = "Live Sync Active";
         document.getElementById("twinStatus").className = "badge bg-success";
 
-        // System Clock
         document.getElementById("system-clock").innerHTML =
           '<i class="fas fa-satellite-dish me-1 text-success"></i> Connected: ' +
           new Date().toLocaleTimeString();
@@ -373,10 +476,7 @@
       });
   }
 
-  // Refresh every 10 seconds
   setInterval(updateDigitalTwin, 10000);
-
-  // Initial run
   updateDigitalTwin();
 </script>
 {% endif %} {% endblock %}

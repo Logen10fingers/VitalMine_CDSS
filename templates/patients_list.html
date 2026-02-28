@@ -1,12 +1,14 @@
 {% extends "base.html" %} {% block content %}
-<div class="card shadow">
-  <div class="card-header bg-primary text-white">
-    <h5 class="mb-0"><i class="fa-solid fa-users"></i> Patient Directory</h5>
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-primary text-white py-3">
+    <h5 class="mb-0 fw-bold">
+      <i class="fa-solid fa-users me-2"></i> Master Patient Directory
+    </h5>
   </div>
-  <div class="card-body">
+  <div class="card-body bg-white">
     <div class="table-responsive">
-      <table class="table table-striped align-middle">
-        <thead>
+      <table class="table table-hover align-middle datatable w-100">
+        <thead class="table-light text-muted small text-uppercase">
           <tr>
             <th>ID</th>
             <th>Username</th>
@@ -21,29 +23,42 @@
         <tbody>
           {% for p in patients %}
           <tr>
-            <td>#{{ p.id }}</td>
-            <td><strong>{{ p.username }}</strong></td>
+            <td class="text-muted fw-bold">#{{ p.id }}</td>
+            <td><strong class="text-dark">{{ p.username }}</strong></td>
             <td>{{ p.age or 'N/A' }} / {{ p.gender or 'N/A' }}</td>
             <td>
-              <span class="badge bg-info text-dark"
+              <span class="badge bg-info text-dark shadow-sm"
                 >{{ p.blood_group or 'N/A' }}</span
               >
             </td>
-            <td>{{ p.contact or 'N/A' }}</td>
+            <td>
+              <span class="text-muted"
+                ><i class="fa-solid fa-phone small me-1"></i> {{ p.contact or
+                'N/A' }}</span
+              >
+            </td>
             <td>{{ p.last_seen }}</td>
             <td>
               {% if p.status == 'High' or p.status == 'Critical' %}
-              <span class="badge bg-danger">Critical</span>
+              <span class="badge-critical rounded px-2 py-1"
+                ><i class="fa-solid fa-triangle-exclamation"></i> Critical</span
+              >
               {% elif p.status == 'Stable' %}
-              <span class="badge bg-success">Stable</span>
+              <span class="badge bg-success"
+                ><i class="fa-solid fa-check"></i> Stable</span
+              >
               {% elif p.status == 'Warning' %}
-              <span class="badge bg-warning text-dark">Warning</span>
+              <span class="badge bg-warning text-dark"
+                ><i class="fa-solid fa-bell"></i> Warning</span
+              >
               {% else %}
               <span class="badge bg-secondary">Unknown</span>
               {% endif %}
             </td>
             <td>
-              <button class="btn btn-sm btn-outline-primary">View</button>
+              <button class="btn btn-sm btn-outline-primary fw-bold px-3">
+                View File
+              </button>
             </td>
           </tr>
           {% endfor %}
