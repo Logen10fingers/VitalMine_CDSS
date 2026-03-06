@@ -60,9 +60,12 @@
               {% endif %}
             </td>
             <td>
-              <button class="btn btn-sm btn-outline-info fw-bold px-3">
+              <a
+                href="{{ url_for('patient_file', patient_id=p.id) }}"
+                class="btn btn-sm btn-outline-info fw-bold px-3"
+              >
                 View File
-              </button>
+              </a>
             </td>
           </tr>
           {% endfor %}

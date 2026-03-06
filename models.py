@@ -35,7 +35,11 @@ class Entry(db.Model):
     temp = db.Column(db.Float, nullable=False)
     hr = db.Column(db.Integer, nullable=False)
     rr = db.Column(db.Integer, nullable=False)
-    wbc = db.Column(db.Float, nullable=False)
+
+    # NEW: Blood Pressure (Systolic and Diastolic) replacing WBC
+    sys_bp = db.Column(db.Integer, nullable=True)
+    dia_bp = db.Column(db.Integer, nullable=True)
+
     status = db.Column(db.String(20), nullable=False)
     advice = db.Column(db.String(200), nullable=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)

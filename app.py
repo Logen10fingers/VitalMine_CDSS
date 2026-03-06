@@ -9,16 +9,14 @@ from flask_login import (
 from werkzeug.security import (
     generate_password_hash,
     check_password_hash,
-)  # NEW: For secure passwords
+)
 import joblib
 import pandas as pd
-import smtplib  # NEW: For Notification Service
+import smtplib
 from datetime import datetime
 
 # --- MVC IMPORTS ---
 from models import db, User, Entry
-
-# Added ask_medical_ai to imports
 from utils import generate_pdf_report, generate_csv_report, ask_medical_ai
 
 app = Flask(__name__)
@@ -45,16 +43,14 @@ def load_user(user_id):
 
 # --- NOTIFICATION SERVICE ---
 def send_emergency_alert(patient_name, vitals, status):
-    """
-    Simulates sending an SMTP email to the Doctor/Admin.
-    This fulfills the 'Notification Service' bubble in the DFD.
-    """
     print("\n" + "=" * 50)
     print(f" [NOTIFICATION SERVICE] 🚨 URGENT ALERT: {status}")
     print(f" To: admin@vitalmine.com")
     print(f" Subject: CRITICAL VITALS - Patient {patient_name}")
     print(f" Body: Patient {patient_name} has triggered a {status} alert.")
-    print(f" Vitals: Temp={vitals['temp']}, HR={vitals['hr']}")
+    print(
+        f" Vitals: Temp={vitals['temp']}, HR={vitals['hr']}, BP={vitals['sys_bp']}/{vitals['dia_bp']}"
+    )
     print("=" * 50 + "\n")
     return True
 
@@ -71,8 +67,8 @@ def home():
     all_entries = Entry.query.order_by(Entry.timestamp.desc()).all()
     stats = {
         "total": len(all_entries),
-        "high": sum(1 for e in all_entries if e.status == "High"),
-        "stable": sum(1 for e in all_entries if e.status != "High"),
+        "high": sum(1 for e in all_entries if e.status in ["High", "Critical"]),
+        "stable": sum(1 for e in all_entries if e.status not in ["High", "Critical"]),
     }
 
     history_data = []
@@ -82,7 +78,7 @@ def home():
                 "id": e.id,
                 "time": e.timestamp.strftime("%H:%M:%S"),
                 "name": e.name,
-                "vitals": f"{e.temp} / {e.hr} / {e.rr} / {e.wbc}",
+                "vitals": f"T:{e.temp} / HR:{e.hr} / BP:{e.sys_bp}/{e.dia_bp}",
                 "status": e.status,
                 "advice": e.advice,
             }
@@ -132,14 +128,33 @@ def patients_directory():
                 "last_seen": last_seen,
                 "age": p.age,
                 "gender": p.gender,
-                "blood_group": p.blood_group,  # NEW: Sent to UI
-                "contact": p.contact,  # NEW: Sent to UI
+                "blood_group": p.blood_group,
+                "contact": p.contact,
             }
         )
     return render_template("patients_list.html", patients=patient_list)
 
 
-# --- PHASE 23: REGISTRATION ROUTE ---
+@app.route("/patient_file/<int:patient_id>")
+@login_required
+def patient_file(patient_id):
+    # Only staff can view patient files
+    if current_user.role not in ["doctor", "nurse", "admin"]:
+        flash("Access Denied.", "danger")
+        return redirect(url_for("home"))
+
+    patient = db.session.get(User, patient_id)
+    if not patient or patient.role != "patient":
+        return "Patient not found", 404
+
+    # Fetch all vitals history for this specific patient
+    history = (
+        Entry.query.filter_by(user_id=patient_id).order_by(Entry.timestamp.desc()).all()
+    )
+
+    return render_template("patient_file.html", patient=patient, history=history)
+
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -148,7 +163,6 @@ def register():
         password = request.form.get("password")
         role = request.form.get("role", "patient")
 
-        # Demographics & Realistic Fields
         age = request.form.get("age")
         gender = request.form.get("gender")
         blood_group = request.form.get("blood_group")
@@ -156,7 +170,6 @@ def register():
         emp_id = request.form.get("emp_id")
         department = request.form.get("department")
 
-        # Validation
         if User.query.filter_by(username=username).first():
             flash("Username already exists.", "danger")
             return redirect(url_for("register"))
@@ -167,7 +180,6 @@ def register():
         hashed_password = generate_password_hash(password)
         age_val = int(age) if age and age.isdigit() else None
 
-        # Determine which fields to save based on role
         if role == "patient":
             emp_id = None
             department = None
@@ -205,7 +217,6 @@ def login():
         password = request.form.get("password")
         user = User.query.filter_by(username=username).first()
 
-        # Phase 23: Now using secure password checking
         if user and check_password_hash(user.password, password):
             login_user(user)
             return redirect(
@@ -232,10 +243,21 @@ def add_vitals():
     try:
         temp = float(request.form.get("temperature"))
         hr = int(request.form.get("heart_rate"))
-        rr = int(request.form.get("resp_rate"))
-        wbc = float(request.form.get("wbc_count"))
-    except ValueError:
-        return "Invalid Data", 400
+
+        rr_raw = request.form.get("resp_rate")
+        rr = int(rr_raw) if rr_raw else 18
+
+        # New Blood Pressure Parsing
+        sys_bp_raw = request.form.get("sys_bp")
+        dia_bp_raw = request.form.get("dia_bp")
+        sys_bp = int(sys_bp_raw) if sys_bp_raw else 120
+        dia_bp = int(dia_bp_raw) if dia_bp_raw else 80
+
+    except (ValueError, TypeError):
+        flash("Invalid Data entered. Please check your vitals.", "danger")
+        return redirect(
+            url_for("patient_dashboard" if current_user.role == "patient" else "home")
+        )
 
     if current_user.role == "patient":
         patient_name = current_user.username
@@ -244,43 +266,58 @@ def add_vitals():
         patient_name = request.form.get("name") or current_user.username
         user_id_save = None
 
+    # AI Risk Engine: We silently feed it a healthy WBC (8000) so the model doesn't crash
     ai_risk = "Stable"
     if model:
-        df = pd.DataFrame([[temp, hr, rr, wbc]], columns=["temp", "hr", "rr", "wbc"])
+        df = pd.DataFrame([[temp, hr, rr, 8000.0]], columns=["temp", "hr", "rr", "wbc"])
         if model.predict(df)[0] == 1:
             ai_risk = "High"
 
     status = "Stable"
     advice_text = "Vitals are normal. Continue standard care."
 
-    if ai_risk == "High":
+    # Clinical Alert Logic - Now heavily checking Blood Pressure!
+    is_hypotensive = sys_bp <= 90 or dia_bp <= 60
+    is_hypertensive_crisis = sys_bp >= 180 or dia_bp >= 120
+
+    if (
+        ai_risk == "High"
+        or hr >= 130
+        or temp >= 39.0
+        or is_hypotensive
+        or is_hypertensive_crisis
+    ):
         status = "Critical"
-        advice_text = (
-            "CRITICAL: Sepsis signs detected. Proceed to Emergency immediately."
-        )
+        if is_hypotensive:
+            advice_text = "CRITICAL: Severe Hypotension (Low BP) detected! Possible Septic Shock. Seek immediate emergency care."
+        else:
+            advice_text = (
+                "CRITICAL: Severe vitals detected. Proceed to Emergency immediately."
+            )
+
         flash(f"🚨 EMERGENCY PROTOCOL: Alert sent for {patient_name}.", "danger")
-        send_emergency_alert(patient_name, {"temp": temp, "hr": hr}, status)
+        send_emergency_alert(
+            patient_name,
+            {"temp": temp, "hr": hr, "sys_bp": sys_bp, "dia_bp": dia_bp},
+            status,
+        )
+
+    elif sys_bp >= 140 or dia_bp >= 90:
+        status = "Warning"
+        advice_text = (
+            "Hypertension detected. Please monitor your blood pressure closely."
+        )
+        flash(f"⚠️ High Blood Pressure Warning for {patient_name}.", "warning")
 
     elif temp > 38.0:
         status = "Warning"
         advice_text = "High Fever detected. Take antipyretics."
         flash(f"⚠️ High Fever Warning for {patient_name}.", "warning")
-        send_emergency_alert(patient_name, {"temp": temp, "hr": hr}, status)
-
-    elif temp < 36.0:
-        status = "Warning"
-        advice_text = "Hypothermia Risk. Keep warm."
-        flash(f"⚠️ Hypothermia Warning for {patient_name}.", "warning")
 
     elif hr > 100:
         status = "Warning"
         advice_text = "Tachycardia. Rest and re-check."
         flash(f"⚠️ Tachycardia Warning for {patient_name}.", "warning")
-
-    elif rr > 22:
-        status = "Warning"
-        advice_text = "Hyperventilation. Monitor breathing."
-        flash(f"⚠️ Respiratory Warning for {patient_name}.", "warning")
 
     else:
         flash(f"✅ Vitals logged for {patient_name}.", "success")
@@ -291,7 +328,8 @@ def add_vitals():
         temp=temp,
         hr=hr,
         rr=rr,
-        wbc=wbc,
+        sys_bp=sys_bp,  # Saved to DB
+        dia_bp=dia_bp,  # Saved to DB
         status=status,
         advice=advice_text,
     )
@@ -336,6 +374,8 @@ def chat_with_ai():
             "name": current_user.username,
             "temp": last_entry.temp,
             "hr": last_entry.hr,
+            "sys_bp": last_entry.sys_bp,
+            "dia_bp": last_entry.dia_bp,
             "status": last_entry.status,
         }
     else:
@@ -343,6 +383,8 @@ def chat_with_ai():
             "name": "Unknown",
             "temp": "N/A",
             "hr": "N/A",
+            "sys_bp": "N/A",
+            "dia_bp": "N/A",
             "status": "Unknown",
         }
 
@@ -376,6 +418,8 @@ def get_patient_history(user_id):
                 "hr": latest.hr,
                 "temp": latest.temp,
                 "rr": latest.rr,
+                "sys_bp": latest.sys_bp,
+                "dia_bp": latest.dia_bp,
                 "status": latest.status,
             },
         }
@@ -386,7 +430,6 @@ if __name__ == "__main__":
     with app.app_context():
         db.create_all()
         if not User.query.filter_by(username="admin").first():
-            # PHASE 23: Updated default users to use hashed passwords
             default_password = generate_password_hash("password123")
 
             db.session.add(

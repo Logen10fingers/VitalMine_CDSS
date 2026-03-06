@@ -1,0 +1,111 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+      <i class="fa-solid fa-file-medical"></i> Medical Record: {{
+      patient.username }}
+    </h2>
+    <a href="/patients" class="btn btn-secondary"
+      ><i class="fa-solid fa-arrow-left"></i> Back to Directory</a
+    >
+  </div>
+
+  <div class="row">
+    <div class="col-md-4 mb-4">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-dark text-white">
+          <h5 class="mb-0"><i class="fa-solid fa-id-card"></i> Demographics</h5>
+        </div>
+        <div class="card-body">
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <strong>Age:</strong> {{ patient.age or 'N/A' }}
+            </li>
+            <li class="list-group-item">
+              <strong>Gender:</strong> {{ patient.gender or 'N/A' }}
+            </li>
+            <li class="list-group-item">
+              <strong>Blood Group:</strong>
+              <span class="badge bg-danger"
+                >{{ patient.blood_group or 'N/A' }}</span
+              >
+            </li>
+            <li class="list-group-item">
+              <strong>Contact:</strong> {{ patient.contact or 'N/A' }}
+            </li>
+            <li class="list-group-item">
+              <strong>Email:</strong> {{ patient.email or 'N/A' }}
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-8 mb-4">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">
+            <i class="fa-solid fa-heart-pulse"></i> Vitals History
+          </h5>
+        </div>
+        <div class="card-body">
+          {% if history %}
+          <div
+            class="table-responsive"
+            style="max-height: 400px; overflow-y: auto"
+          >
+            <table class="table table-hover table-striped">
+              <thead
+                class="table-light"
+                style="position: sticky; top: 0; z-index: 1"
+              >
+                <tr>
+                  <th>Date & Time</th>
+                  <th>Temp (°C)</th>
+                  <th>HR (bpm)</th>
+                  <th>BP (mmHg)</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for entry in history %}
+                <tr>
+                  <td>{{ entry.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                  <td>{{ entry.temp }}</td>
+                  <td>{{ entry.hr }}</td>
+                  <td>{{ entry.sys_bp }}/{{ entry.dia_bp }}</td>
+                  <td>
+                    {% if entry.status == 'High' or entry.status == 'Critical'
+                    %}
+                    <span class="badge bg-danger">Critical</span>
+                    {% elif entry.status == 'Warning' %}
+                    <span class="badge bg-warning text-dark">Warning</span>
+                    {% else %}
+                    <span class="badge bg-success">Stable</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <a
+                      href="{{ url_for('generate_pdf', entry_id=entry.id) }}"
+                      class="btn btn-sm btn-outline-danger"
+                    >
+                      <i class="fa-solid fa-file-pdf"></i>
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="alert alert-secondary text-center">
+            No vitals history recorded for this patient yet.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
