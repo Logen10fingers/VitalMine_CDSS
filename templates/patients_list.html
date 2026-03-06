@@ -24,7 +24,9 @@
         <tbody>
           {% for p in patients %}
           <tr>
-            <td class="text-secondary fw-bold">#{{ p.id }}</td>
+            <td class="text-secondary fw-bold">
+              PT-{{ "%03d" | format(loop.index) }}
+            </td>
             <td><strong class="text-body">{{ p.username }}</strong></td>
             <td class="text-body">
               {{ p.age or 'N/A' }} / {{ p.gender or 'N/A' }}

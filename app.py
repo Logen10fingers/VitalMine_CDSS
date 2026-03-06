@@ -64,7 +64,7 @@ def home():
     if current_user.role == "patient":
         return redirect(url_for("patient_dashboard"))
 
-    # NEW: Fetch all patients to populate the Digital Twin dropdown
+    # Fetch all patients to populate the Digital Twin dropdown
     patients = User.query.filter_by(role="patient").all()
 
     all_entries = Entry.query.order_by(Entry.timestamp.desc()).all()
@@ -87,7 +87,7 @@ def home():
             }
         )
 
-    # NEW: Passed 'patients' to the template
+    # Passed 'patients' to the template
     return render_template(
         "home.html", history=history_data, stats=stats, patients=patients
     )
@@ -429,6 +429,49 @@ def get_patient_history(user_id):
                 "status": latest.status,
             },
         }
+    )
+
+
+# --- PHASE 2 MODULE PLACEHOLDERS ---
+@app.route("/trends")
+@login_required
+def trends():
+    return render_template(
+        "coming_soon.html", title="Sepsis Epidemiological Trends", icon="fa-chart-area"
+    )
+
+
+@app.route("/model_accuracy")
+@login_required
+def model_accuracy():
+    return render_template(
+        "coming_soon.html", title="AI Model Accuracy & Tuning", icon="fa-brain"
+    )
+
+
+@app.route("/staff")
+@login_required
+def staff_directory():
+    return render_template(
+        "coming_soon.html", title="Hospital Staff Directory", icon="fa-user-nurse"
+    )
+
+
+@app.route("/iot_config")
+@login_required
+def iot_config():
+    return render_template(
+        "coming_soon.html",
+        title="IoT Hardware Sync Configuration",
+        icon="fa-satellite-dish",
+    )
+
+
+@app.route("/settings")
+@login_required
+def settings():
+    return render_template(
+        "coming_soon.html", title="Global System Settings", icon="fa-gear"
     )
 
 

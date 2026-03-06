@@ -91,7 +91,7 @@
       .sidebar a {
         padding: 15px 25px;
         text-decoration: none;
-        font-size: 1.1rem;
+        font-size: 1.05rem;
         color: #94a3b8;
         display: block;
         transition: 0.3s;
@@ -173,23 +173,100 @@
     {% if current_user.is_authenticated %}
     <div class="sidebar">
       <div class="brand"><i class="fa-solid fa-heart-pulse"></i> VitalMine</div>
-      {% if current_user.role in ['admin', 'doctor'] %}
-      <a href="{{ url_for('home') }}"
-        ><i class="fa-solid fa-chart-line"></i> Dashboard</a
-      >
-      {% endif %} {% if current_user.role == 'patient' %}
-      <a href="{{ url_for('patient_dashboard') }}"
-        ><i class="fa-solid fa-bed-pulse"></i> My Vitals</a
-      >
-      {% endif %} {% if current_user.role in ['admin', 'doctor', 'nurse'] %}
-      <a href="{{ url_for('patients_directory') }}"
-        ><i class="fa-solid fa-users"></i> Patient Directory</a
-      >
-      {% endif %} {% if current_user.role == 'admin' %}
-      <a href="{{ url_for('export_data') }}"
-        ><i class="fa-solid fa-file-csv"></i> Export Logs</a
-      >
-      {% endif %}
+
+      <ul class="nav flex-column mb-auto mt-2">
+        {% if current_user.role in ['admin', 'doctor'] %}
+        <li class="nav-item mb-1">
+          <a
+            href="{{ url_for('home') }}"
+            class="{% if request.path == '/' %}active fw-bold{% endif %}"
+          >
+            <i class="fa-solid fa-chart-line"></i> Dashboard
+          </a>
+        </li>
+        {% endif %} {% if current_user.role == 'patient' %}
+        <li class="nav-item mb-1">
+          <a
+            href="{{ url_for('patient_dashboard') }}"
+            class="{% if request.path == '/patient_dashboard' %}active fw-bold{% endif %}"
+          >
+            <i class="fa-solid fa-bed-pulse"></i> My Vitals
+          </a>
+        </li>
+        {% endif %} {% if current_user.role in ['admin', 'doctor', 'nurse'] %}
+        <li class="nav-item mb-1">
+          <a
+            href="{{ url_for('patients_directory') }}"
+            class="{% if '/patient' in request.path %}active fw-bold{% endif %}"
+          >
+            <i class="fa-solid fa-users-medical"></i> Patient Directory
+          </a>
+        </li>
+        {% endif %} {% if current_user.role != 'patient' %}
+        <hr class="text-secondary my-3 border-secondary" />
+        <small
+          class="text-muted fw-bold px-4 mb-2 d-block"
+          style="font-size: 0.7rem; letter-spacing: 1px"
+          >ANALYTICS & AI</small
+        >
+
+        <li class="nav-item mb-1">
+          <a
+            href="/trends"
+            class="{% if request.path == '/trends' %}active fw-bold{% endif %}"
+          >
+            <i class="fa-solid fa-chart-area text-info"></i> Sepsis Trends
+          </a>
+        </li>
+        <li class="nav-item mb-1">
+          <a
+            href="/model_accuracy"
+            class="{% if request.path == '/model_accuracy' %}active fw-bold{% endif %}"
+          >
+            <i class="fa-solid fa-brain text-warning"></i> Model Accuracy
+          </a>
+        </li>
+
+        <hr class="text-secondary my-3 border-secondary" />
+        <small
+          class="text-muted fw-bold px-4 mb-2 d-block"
+          style="font-size: 0.7rem; letter-spacing: 1px"
+          >ADMINISTRATION</small
+        >
+
+        <li class="nav-item mb-1">
+          <a
+            href="/staff"
+            class="{% if request.path == '/staff' %}active fw-bold{% endif %}"
+          >
+            <i class="fa-solid fa-user-nurse"></i> Staff Directory
+          </a>
+        </li>
+        <li class="nav-item mb-1">
+          <a
+            href="/iot_config"
+            class="{% if request.path == '/iot_config' %}active fw-bold{% endif %}"
+          >
+            <i class="fa-solid fa-satellite-dish"></i> IoT Sync Config
+          </a>
+        </li>
+        {% if current_user.role == 'admin' %}
+        <li class="nav-item mb-1">
+          <a href="{{ url_for('export_data') }}">
+            <i class="fa-solid fa-file-csv"></i> Export Logs
+          </a>
+        </li>
+        {% endif %}
+        <li class="nav-item mb-1">
+          <a
+            href="/settings"
+            class="{% if request.path == '/settings' %}active fw-bold{% endif %}"
+          >
+            <i class="fa-solid fa-gear"></i> Settings
+          </a>
+        </li>
+        {% endif %}
+      </ul>
     </div>
     {% endif %}
 

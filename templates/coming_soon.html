@@ -1,0 +1,30 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mt-5 pt-5 text-center">
+  <div
+    class="card shadow-lg border-0 mx-auto"
+    style="max-width: 600px; background-color: var(--vm-card-bg)"
+  >
+    <div class="card-body p-5">
+      <i class="fa-solid {{ icon }} fa-5x mb-4 text-secondary opacity-50"></i>
+      <h2 class="text-body fw-bold mb-3">{{ title }}</h2>
+      <div class="progress mb-4 w-50 mx-auto" style="height: 3px">
+        <div
+          class="progress-bar bg-primary progress-bar-striped progress-bar-animated"
+          role="progressbar"
+          style="width: 100%"
+        ></div>
+      </div>
+      <p class="lead text-muted fw-bold">Module Currently Locked</p>
+      <p class="text-secondary mb-4" style="font-size: 0.95rem">
+        The <strong class="text-primary">{{ title }}</strong> module is slated
+        for deployment in Phase 2 of the VitalMine CDSS roadmap. Core predictive
+        models and live IoT telemetry are currently prioritized for this
+        release.
+      </p>
+      <a href="/" class="btn btn-primary fw-bold px-4 py-2 shadow-sm">
+        <i class="fa-solid fa-arrow-left me-2"></i> Return to Dashboard
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
