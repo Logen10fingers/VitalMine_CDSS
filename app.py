@@ -64,6 +64,9 @@ def home():
     if current_user.role == "patient":
         return redirect(url_for("patient_dashboard"))
 
+    # NEW: Fetch all patients to populate the Digital Twin dropdown
+    patients = User.query.filter_by(role="patient").all()
+
     all_entries = Entry.query.order_by(Entry.timestamp.desc()).all()
     stats = {
         "total": len(all_entries),
@@ -84,7 +87,10 @@ def home():
             }
         )
 
-    return render_template("home.html", history=history_data, stats=stats)
+    # NEW: Passed 'patients' to the template
+    return render_template(
+        "home.html", history=history_data, stats=stats, patients=patients
+    )
 
 
 @app.route("/patient_dashboard")

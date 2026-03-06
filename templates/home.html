@@ -163,14 +163,25 @@
             </div>
             <div class="col-6 mb-3">
               <label class="form-label fw-bold text-secondary small"
-                >WBC COUNT</label
+                >BLOOD PRESSURE</label
               >
-              <input
-                type="number"
-                name="wbc_count"
-                class="form-control"
-                required
-              />
+              <div class="input-group">
+                <input
+                  type="number"
+                  name="sys_bp"
+                  class="form-control px-1"
+                  placeholder="120"
+                  required
+                />
+                <span class="input-group-text px-1">/</span>
+                <input
+                  type="number"
+                  name="dia_bp"
+                  class="form-control px-1"
+                  placeholder="80"
+                  required
+                />
+              </div>
             </div>
           </div>
           <button type="submit" class="btn btn-primary w-100 fw-bold mt-2">
@@ -190,12 +201,21 @@
       <div
         class="card-header d-flex flex-row align-items-center justify-content-between"
       >
-        <h6 class="m-0 fw-bold text-body">
+        <h6 class="m-0 fw-bold text-body d-flex align-items-center">
           <i
             class="fas fa-street-view me-2"
             style="color: var(--vm-accent)"
           ></i>
-          Real-Time Digital Twin (Patient: patient_om)
+          Real-Time Digital Twin
+          <select
+            id="dt-patient-selector"
+            class="form-select form-select-sm ms-3 d-inline-block w-auto shadow-sm"
+            onchange="updateDigitalTwin()"
+          >
+            {% for p in patients %}
+            <option value="{{ p.id }}">{{ p.username }}</option>
+            {% endfor %}
+          </select>
         </h6>
         <span id="twinStatus" class="badge bg-secondary">Syncing...</span>
       </div>
@@ -377,7 +397,7 @@
               <tr>
                 <th>TIME</th>
                 <th>PATIENT</th>
-                <th>VITALS (T/HR/RR)</th>
+                <th>VITALS (T/HR/RR/BP)</th>
                 <th>AI ASSESSMENT</th>
                 <th>ACTION</th>
               </tr>
@@ -431,11 +451,35 @@
 {% if current_user.role in ['admin', 'doctor'] %}
 <script>
   function updateDigitalTwin() {
-    fetch("/api/patient_history/4")
+    // NEW: Get the currently selected patient ID from the dropdown
+    const patientSelector = document.getElementById("dt-patient-selector");
+    if (!patientSelector) return;
+
+    const patientId = patientSelector.value;
+    if (!patientId) return;
+
+    // Fetch data dynamically for that specific patient
+    fetch(`/api/patient_history/${patientId}`)
       .then((response) => response.json())
       .then((data) => {
         if (data.error) {
-          document.getElementById("twinStatus").innerText = "Offline";
+          document.getElementById("twinStatus").innerText = "No Data Yet";
+          document.getElementById("twinStatus").className =
+            "badge bg-warning text-dark";
+          document.getElementById("val-temp").innerText = "--";
+          document.getElementById("val-hr").innerText = "--";
+          document.getElementById("val-rr").innerText = "--";
+          document.getElementById("val-status").innerText = "UNKNOWN";
+          document.getElementById("val-status").className =
+            "badge bg-secondary";
+
+          // Reset organs to normal if no data
+          document.getElementById("organ-heart").style.fill =
+            "var(--vm-organ-base)";
+          document.getElementById("organ-head").style.fill =
+            "var(--vm-organ-base)";
+          document.getElementById("organ-lungs").style.fill =
+            "var(--vm-organ-base)";
           return;
         }
 
@@ -456,7 +500,6 @@
           statusBadge.className = "badge bg-success";
         }
 
-        // Use standard CSS variable resetting for dynamic theme changes
         const heart = document.getElementById("organ-heart");
         const pulseAnim = heart.querySelector("animateTransform");
         if (latest.hr > 100) {

@@ -62,6 +62,7 @@ def ask_medical_ai(user_question, patient_context):
         - Name: {patient_context.get('name', 'Unknown')}
         - Temp: {patient_context.get('temp', 'N/A')} C
         - Heart Rate: {patient_context.get('hr', 'N/A')} bpm
+        - Blood Pressure: {patient_context.get('sys_bp', 'N/A')}/{patient_context.get('dia_bp', 'N/A')} mmHg
         - Status: {patient_context.get('status', 'Unknown')}
         
         User Question: "{user_question}"
@@ -102,7 +103,8 @@ def generate_pdf_report(entry):
     p.drawString(70, 580, f"• Temperature: {entry.temp} C")
     p.drawString(70, 560, f"• Heart Rate: {entry.hr} bpm")
     p.drawString(70, 540, f"• Resp Rate: {entry.rr} /min")
-    p.drawString(70, 520, f"• WBC Count: {entry.wbc}")
+    # NEW: Updated to display Blood Pressure instead of WBC
+    p.drawString(70, 520, f"• Blood Pressure: {entry.sys_bp}/{entry.dia_bp} mmHg")
 
     p.rect(50, 430, 500, 80)
     p.setFont("Helvetica-Bold", 14)
@@ -133,9 +135,35 @@ def generate_csv_report(all_entries):
     """
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["ID", "Timestamp", "Name", "Temp", "HR", "Status", "Advice"])
+    # NEW: Updated Headers to include Blood Pressure
+    writer.writerow(
+        [
+            "ID",
+            "Timestamp",
+            "Name",
+            "Temp",
+            "HR",
+            "Sys_BP",
+            "Dia_BP",
+            "Status",
+            "Advice",
+        ]
+    )
     for e in all_entries:
-        writer.writerow([e.id, e.timestamp, e.name, e.temp, e.hr, e.status, e.advice])
+        # NEW: Added sys_bp and dia_bp to the data payload
+        writer.writerow(
+            [
+                e.id,
+                e.timestamp,
+                e.name,
+                e.temp,
+                e.hr,
+                e.sys_bp,
+                e.dia_bp,
+                e.status,
+                e.advice,
+            ]
+        )
     output.seek(0)
     return Response(
         output,
