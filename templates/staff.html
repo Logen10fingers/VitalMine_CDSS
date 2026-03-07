@@ -1,0 +1,201 @@
+{% extends "base.html" %} {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h3 class="mb-0 fw-bold text-body">
+    <i class="fa-solid fa-users-gear me-2"></i> System User Management
+  </h3>
+  <a href="/register" class="btn btn-primary fw-bold shadow-sm">
+    <i class="fa-solid fa-user-plus me-1"></i> Register New User
+  </a>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-light pt-3 pb-0 border-0">
+    <ul class="nav nav-tabs border-0" id="userManagementTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button
+          class="nav-link active fw-bold text-primary"
+          id="doctors-tab"
+          data-bs-toggle="tab"
+          data-bs-target="#doctors"
+          type="button"
+          role="tab"
+        >
+          <i class="fa-solid fa-user-doctor me-1"></i> Doctors ({{
+          doctors|length }})
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button
+          class="nav-link fw-bold text-info"
+          id="nurses-tab"
+          data-bs-toggle="tab"
+          data-bs-target="#nurses"
+          type="button"
+          role="tab"
+        >
+          <i class="fa-solid fa-user-nurse me-1"></i> Nurses ({{ nurses|length
+          }})
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button
+          class="nav-link fw-bold text-success"
+          id="patients-tab"
+          data-bs-toggle="tab"
+          data-bs-target="#patients"
+          type="button"
+          role="tab"
+        >
+          <i class="fa-solid fa-bed-pulse me-1"></i> Patients ({{
+          patients|length }})
+        </button>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card-body mt-3">
+    <div class="tab-content" id="userManagementTabsContent">
+      <div class="tab-pane fade show active" id="doctors" role="tabpanel">
+        <div class="table-responsive">
+          <table
+            class="table table-hover align-middle datatable w-100 text-body"
+          >
+            <thead class="text-secondary small text-uppercase">
+              <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Employee ID</th>
+                <th>Department</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in doctors %}
+              <tr>
+                <td class="fw-bold">{{ d.username }}</td>
+                <td>{{ d.email or 'N/A' }}</td>
+                <td>
+                  <span class="badge bg-secondary"
+                    >{{ d.emp_id or 'N/A' }}</span
+                  >
+                </td>
+                <td>{{ d.department or 'N/A' }}</td>
+                <td>
+                  <form
+                    method="POST"
+                    action="/delete_user/{{ d.id }}"
+                    style="display: inline"
+                  >
+                    <button
+                      type="submit"
+                      class="btn btn-sm btn-outline-danger fw-bold"
+                      onclick="return confirm('WARNING: Are you sure you want to permanently delete Dr. {{ d.username }}?');"
+                    >
+                      <i class="fa-solid fa-trash-can"></i> Delete
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="nurses" role="tabpanel">
+        <div class="table-responsive">
+          <table
+            class="table table-hover align-middle datatable w-100 text-body"
+          >
+            <thead class="text-secondary small text-uppercase">
+              <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Employee ID</th>
+                <th>Department</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for n in nurses %}
+              <tr>
+                <td class="fw-bold">{{ n.username }}</td>
+                <td>{{ n.email or 'N/A' }}</td>
+                <td>
+                  <span class="badge bg-secondary"
+                    >{{ n.emp_id or 'N/A' }}</span
+                  >
+                </td>
+                <td>{{ n.department or 'N/A' }}</td>
+                <td>
+                  <form
+                    method="POST"
+                    action="/delete_user/{{ n.id }}"
+                    style="display: inline"
+                  >
+                    <button
+                      type="submit"
+                      class="btn btn-sm btn-outline-danger fw-bold"
+                      onclick="return confirm('WARNING: Are you sure you want to permanently delete Nurse {{ n.username }}?');"
+                    >
+                      <i class="fa-solid fa-trash-can"></i> Delete
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="patients" role="tabpanel">
+        <div class="table-responsive">
+          <table
+            class="table table-hover align-middle datatable w-100 text-body"
+          >
+            <thead class="text-secondary small text-uppercase">
+              <tr>
+                <th>Username</th>
+                <th>Demographics</th>
+                <th>Blood Group</th>
+                <th>Contact</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in patients %}
+              <tr>
+                <td class="fw-bold">{{ p.username }}</td>
+                <td>{{ p.age or 'N/A' }} / {{ p.gender or 'N/A' }}</td>
+                <td>
+                  <span class="badge bg-dark border border-secondary text-info"
+                    >{{ p.blood_group or 'N/A' }}</span
+                  >
+                </td>
+                <td>{{ p.contact or 'N/A' }}</td>
+                <td>
+                  <form
+                    method="POST"
+                    action="/delete_user/{{ p.id }}"
+                    style="display: inline"
+                  >
+                    <button
+                      type="submit"
+                      class="btn btn-sm btn-danger fw-bold shadow-sm"
+                      onclick="return confirm('CRITICAL WARNING: Deleting patient {{ p.username }} will also permanently erase their entire medical vitals history. Proceed?');"
+                    >
+                      <i class="fa-solid fa-user-xmark"></i> Erase Patient
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

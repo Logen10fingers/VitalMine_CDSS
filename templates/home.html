@@ -20,6 +20,83 @@
 
 {% if current_user.role in ['admin', 'doctor'] %}
 <div class="row mb-4">
+  {% if current_user.role == 'admin' %}
+  <div class="col-md-4 mb-3">
+    <div
+      class="card h-100 py-2"
+      style="border-left: 4px solid var(--vm-accent)"
+    >
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col">
+            <div
+              class="text-xs fw-bold text-uppercase mb-1"
+              style="font-size: 0.8rem; color: var(--vm-accent)"
+            >
+              Total System Users
+            </div>
+            <div class="h3 mb-0 fw-bold text-body">
+              {{ admin_stats.total_users }}
+            </div>
+          </div>
+          <div class="col-auto">
+            <i
+              class="fa-solid fa-users-gear fa-2x text-secondary opacity-50"
+            ></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 mb-3">
+    <div class="card h-100 py-2" style="border-left: 4px solid #818cf8">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col">
+            <div
+              class="text-xs fw-bold text-uppercase mb-1"
+              style="font-size: 0.8rem; color: #818cf8"
+            >
+              Active Medical Staff
+            </div>
+            <div class="h3 mb-0 fw-bold text-body">
+              {{ admin_stats.staff_count }}
+            </div>
+          </div>
+          <div class="col-auto">
+            <i
+              class="fa-solid fa-user-doctor fa-2x text-secondary opacity-50"
+            ></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 mb-3">
+    <div class="card h-100 py-2" style="border-left: 4px solid #10b981">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col">
+            <div
+              class="text-xs fw-bold text-success text-uppercase mb-1"
+              style="font-size: 0.8rem"
+            >
+              Registered Patients
+            </div>
+            <div class="h3 mb-0 fw-bold text-body">
+              {{ admin_stats.patient_count }}
+            </div>
+          </div>
+          <div class="col-auto">
+            <i
+              class="fa-solid fa-bed-pulse fa-2x text-secondary opacity-50"
+            ></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
   <div class="col-md-4 mb-3">
     <div
       class="card h-100 py-2"
@@ -45,7 +122,6 @@
       </div>
     </div>
   </div>
-
   <div class="col-md-4 mb-3">
     <div class="card h-100 py-2" style="border-left: 4px solid #ef4444">
       <div class="card-body">
@@ -70,7 +146,6 @@
       </div>
     </div>
   </div>
-
   <div class="col-md-4 mb-3">
     <div class="card h-100 py-2" style="border-left: 4px solid #10b981">
       <div class="card-body">
@@ -95,15 +170,60 @@
       </div>
     </div>
   </div>
+  {% endif %}
 </div>
 {% endif %}
 
 <div class="row">
-  {% if current_user.role in ['admin', 'nurse'] %}
+  {% if current_user.role == 'admin' %}
   <div class="col-md-4">
-    <div class="card mb-4">
+    <div class="card mb-4 border-0 shadow-sm">
+      <div class="card-header bg-dark text-white border-0">
+        <h5 class="mb-0">
+          <i class="fa-solid fa-server me-2"></i> System Control Panel
+        </h5>
+      </div>
       <div
-        class="card-header text-white"
+        class="card-body rounded-bottom text-center p-4"
+        style="background-color: var(--vm-card-bg)"
+      >
+        <i
+          class="fa-solid fa-database fa-4x text-secondary opacity-25 mb-3"
+        ></i>
+        <p class="small text-muted mb-4">
+          Secure administrative actions for managing the VitalMine CDSS
+          platform.
+        </p>
+
+        <a
+          href="/staff"
+          class="btn btn-primary w-100 mb-3 fw-bold py-2 shadow-sm text-start"
+        >
+          <i class="fa-solid fa-users-gear w-20px text-center me-2"></i> Manage
+          Users
+        </a>
+        <a
+          href="/register"
+          class="btn btn-info text-white w-100 mb-3 fw-bold py-2 shadow-sm text-start"
+        >
+          <i class="fa-solid fa-user-plus w-20px text-center me-2"></i> Register
+          New Staff
+        </a>
+        <a
+          href="/export_data"
+          class="btn btn-success w-100 mb-3 fw-bold py-2 shadow-sm text-start"
+        >
+          <i class="fa-solid fa-cloud-arrow-down w-20px text-center me-2"></i>
+          Backup Ward DB
+        </a>
+      </div>
+    </div>
+  </div>
+  {% elif current_user.role == 'nurse' %}
+  <div class="col-md-4">
+    <div class="card mb-4 border-0 shadow-sm">
+      <div
+        class="card-header text-white border-0"
         style="background-color: #2563eb !important"
       >
         <h5 class="mb-0">
@@ -321,8 +441,8 @@
             >
               <small class="text-secondary fw-bold">TEMPERATURE</small>
               <div>
-                <span id="val-temp" class="h4 text-body fw-bold">--</span>
-                <span class="text-secondary small">°C</span>
+                <span id="val-temp" class="h4 text-body fw-bold">--</span
+                ><span class="text-secondary small">°C</span>
               </div>
             </div>
             <div
@@ -334,8 +454,8 @@
             >
               <small class="text-secondary fw-bold">RESPIRATION</small>
               <div>
-                <span id="val-rr" class="h4 text-body fw-bold">--</span>
-                <span class="text-secondary small">/min</span>
+                <span id="val-rr" class="h4 text-body fw-bold">--</span
+                ><span class="text-secondary small">/min</span>
               </div>
             </div>
           </div>
@@ -357,8 +477,8 @@
             >
               <small class="text-secondary fw-bold">HEART RATE</small>
               <div>
-                <span id="val-hr" class="h4 text-body fw-bold">--</span>
-                <span class="text-secondary small">BPM</span>
+                <span id="val-hr" class="h4 text-body fw-bold">--</span
+                ><span class="text-secondary small">BPM</span>
               </div>
             </div>
             <div class="card p-2" style="background-color: var(--vm-card-bg)">
@@ -373,9 +493,9 @@
     </div>
     {% endif %}
 
-    <div class="card">
+    <div class="card border-0 shadow-sm">
       <div
-        class="card-header d-flex justify-content-between align-items-center py-3"
+        class="card-header border-0 bg-light d-flex justify-content-between align-items-center py-3"
       >
         <h6 class="m-0 fw-bold text-body">
           <i
@@ -451,14 +571,12 @@
 {% if current_user.role in ['admin', 'doctor'] %}
 <script>
   function updateDigitalTwin() {
-    // NEW: Get the currently selected patient ID from the dropdown
     const patientSelector = document.getElementById("dt-patient-selector");
     if (!patientSelector) return;
 
     const patientId = patientSelector.value;
     if (!patientId) return;
 
-    // Fetch data dynamically for that specific patient
     fetch(`/api/patient_history/${patientId}`)
       .then((response) => response.json())
       .then((data) => {
@@ -473,7 +591,6 @@
           document.getElementById("val-status").className =
             "badge bg-secondary";
 
-          // Reset organs to normal if no data
           document.getElementById("organ-heart").style.fill =
             "var(--vm-organ-base)";
           document.getElementById("organ-head").style.fill =

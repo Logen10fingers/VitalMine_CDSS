@@ -74,6 +74,16 @@ def home():
         "stable": sum(1 for e in all_entries if e.status not in ["High", "Critical"]),
     }
 
+    # Admin specific IT statistics
+    admin_stats = {}
+    if current_user.role == "admin":
+        all_users = User.query.all()
+        admin_stats = {
+            "total_users": len(all_users),
+            "staff_count": sum(1 for u in all_users if u.role in ["doctor", "nurse"]),
+            "patient_count": sum(1 for u in all_users if u.role == "patient"),
+        }
+
     history_data = []
     for e in all_entries:
         history_data.append(
@@ -87,9 +97,13 @@ def home():
             }
         )
 
-    # Passed 'patients' to the template
+    # Passed 'patients' and 'admin_stats' to the template
     return render_template(
-        "home.html", history=history_data, stats=stats, patients=patients
+        "home.html",
+        history=history_data,
+        stats=stats,
+        patients=patients,
+        admin_stats=admin_stats,
     )
 
 
@@ -432,6 +446,51 @@ def get_patient_history(user_id):
     )
 
 
+# --- USER MANAGEMENT HUB (ADMIN ONLY) ---
+@app.route("/staff")
+@login_required
+def staff_directory():
+    if current_user.role != "admin":
+        flash("Access Denied. Administrator privileges required.", "danger")
+        return redirect(url_for("home"))
+
+    # Query users separated by role
+    doctors = User.query.filter_by(role="doctor").all()
+    nurses = User.query.filter_by(role="nurse").all()
+    patients = User.query.filter_by(role="patient").all()
+
+    return render_template(
+        "staff.html", doctors=doctors, nurses=nurses, patients=patients
+    )
+
+
+@app.route("/delete_user/<int:user_id>", methods=["POST"])
+@login_required
+def delete_user(user_id):
+    if current_user.role != "admin":
+        return "Access Denied", 403
+
+    user_to_delete = db.session.get(User, user_id)
+
+    if user_to_delete:
+        if user_to_delete.id == current_user.id:
+            flash(
+                "System Protection: You cannot delete your own admin account.", "danger"
+            )
+        else:
+            # First, permanently delete all their recorded vitals from the system
+            Entry.query.filter_by(user_id=user_id).delete()
+            # Next, delete the actual user profile
+            db.session.delete(user_to_delete)
+            db.session.commit()
+            flash(
+                f"User '{user_to_delete.username}' and all associated records have been permanently deleted.",
+                "success",
+            )
+
+    return redirect(url_for("staff_directory"))
+
+
 # --- PHASE 2 MODULE PLACEHOLDERS ---
 @app.route("/trends")
 @login_required
@@ -446,14 +505,6 @@ def trends():
 def model_accuracy():
     return render_template(
         "coming_soon.html", title="AI Model Accuracy & Tuning", icon="fa-brain"
-    )
-
-
-@app.route("/staff")
-@login_required
-def staff_directory():
-    return render_template(
-        "coming_soon.html", title="Hospital Staff Directory", icon="fa-user-nurse"
     )
 
 
