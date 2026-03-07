@@ -427,11 +427,13 @@ def chat_with_ai():
         .first()
     )
 
+    # FIXED: Added the 'rr' (respiratory rate) into the context so the AI can see it!
     if last_entry:
         context = {
             "name": current_user.username,
             "temp": last_entry.temp,
             "hr": last_entry.hr,
+            "rr": last_entry.rr,
             "sys_bp": last_entry.sys_bp,
             "dia_bp": last_entry.dia_bp,
             "status": last_entry.status,
@@ -441,6 +443,7 @@ def chat_with_ai():
             "name": "Unknown",
             "temp": "N/A",
             "hr": "N/A",
+            "rr": "N/A",
             "sys_bp": "N/A",
             "dia_bp": "N/A",
             "status": "Unknown",

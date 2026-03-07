@@ -28,7 +28,7 @@ def ask_medical_ai(user_question, patient_context):
 
         genai.configure(api_key=GEMINI_API_KEY)
 
-        # --- DYNAMIC MODEL DISCOVERY (The Fix) ---
+        # --- DYNAMIC MODEL DISCOVERY ---
         # Instead of guessing 'gemini-1.5-flash', we ask Google what is available.
         target_model = None
         available_models = []
@@ -54,7 +54,7 @@ def ask_medical_ai(user_question, patient_context):
         # Initialize the found model
         model = genai.GenerativeModel(target_model)
 
-        # The Prompt (The Brain)
+        # The Prompt (The Brain) - FIXED: Added Resp Rate!
         prompt = f"""
         You are VitalBot, a helpful medical assistant for a hospital dashboard.
         
@@ -62,6 +62,7 @@ def ask_medical_ai(user_question, patient_context):
         - Name: {patient_context.get('name', 'Unknown')}
         - Temp: {patient_context.get('temp', 'N/A')} C
         - Heart Rate: {patient_context.get('hr', 'N/A')} bpm
+        - Resp Rate: {patient_context.get('rr', 'N/A')} breaths/min
         - Blood Pressure: {patient_context.get('sys_bp', 'N/A')}/{patient_context.get('dia_bp', 'N/A')} mmHg
         - Status: {patient_context.get('status', 'Unknown')}
         
@@ -71,14 +72,39 @@ def ask_medical_ai(user_question, patient_context):
         - Answer as a medical professional.
         - If the status is 'High' or 'Critical', warn the user immediately.
         - Keep the answer under 3 sentences.
+        - You are an AI, so remind the user to consult a human doctor if they ask for a formal diagnosis.
         """
 
-        response = model.generate_content(prompt)
+        # --- THE FIX: TURN OFF GOOGLE'S MEDICAL/DANGEROUS CENSORSHIP ---
+        safety_settings = [
+            {
+                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                "threshold": "BLOCK_NONE",
+            },
+            {
+                "category": "HARM_CATEGORY_HARASSMENT",
+                "threshold": "BLOCK_NONE",
+            },
+            {
+                "category": "HARM_CATEGORY_HATE_SPEECH",
+                "threshold": "BLOCK_NONE",
+            },
+            {
+                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                "threshold": "BLOCK_NONE",
+            },
+        ]
+
+        # Pass the safety settings into the API call so it doesn't block medical talk
+        response = model.generate_content(prompt, safety_settings=safety_settings)
         return response.text
 
     except Exception as e:
-        # If internet fails or key is bad, return a fallback instead of crashing
-        print(f"\n[AI ERROR LOG] {str(e)}\n")
+        # If internet fails, key is bad, or limit hit, print EXACT reason to terminal
+        print("\n" + "=" * 50)
+        print("🚨 CRITICAL AI ERROR DETECTED BY GOOGLE:")
+        print(str(e))
+        print("=" * 50 + "\n")
         return "I am having trouble connecting to the AI server. Please check your internet or API Key."
 
 
@@ -103,7 +129,6 @@ def generate_pdf_report(entry):
     p.drawString(70, 580, f"• Temperature: {entry.temp} C")
     p.drawString(70, 560, f"• Heart Rate: {entry.hr} bpm")
     p.drawString(70, 540, f"• Resp Rate: {entry.rr} /min")
-    # NEW: Updated to display Blood Pressure instead of WBC
     p.drawString(70, 520, f"• Blood Pressure: {entry.sys_bp}/{entry.dia_bp} mmHg")
 
     p.rect(50, 430, 500, 80)
@@ -135,7 +160,6 @@ def generate_csv_report(all_entries):
     """
     output = io.StringIO()
     writer = csv.writer(output)
-    # NEW: Updated Headers to include Blood Pressure
     writer.writerow(
         [
             "ID",
@@ -150,7 +174,6 @@ def generate_csv_report(all_entries):
         ]
     )
     for e in all_entries:
-        # NEW: Added sys_bp and dia_bp to the data payload
         writer.writerow(
             [
                 e.id,

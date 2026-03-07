@@ -1,14 +1,22 @@
 {% extends "base.html" %} {% block content %}
 <div class="row justify-content-center mt-5">
   <div class="col-md-4">
-    <div class="card shadow">
-      <div class="card-header bg-primary text-white text-center">
-        <h4><i class="fa-solid fa-user-doctor"></i> Staff Login</h4>
+    <div class="card shadow border-0">
+      <div
+        class="card-header text-white text-center border-0"
+        style="background-color: #2563eb !important"
+      >
+        <h4 class="mb-0 py-1">
+          <i class="fa-solid fa-user-doctor me-1"></i> Staff Login
+        </h4>
       </div>
-      <div class="card-body p-4">
+      <div class="card-body p-4" style="background-color: var(--vm-card-bg)">
         <form method="POST" action="/login">
           <div class="mb-3">
-            <label class="form-label">Username</label>
+            <label
+              class="form-label fw-bold text-secondary small text-uppercase"
+              >Username</label
+            >
             <input
               type="text"
               name="username"
@@ -19,7 +27,10 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label">Password</label>
+            <label
+              class="form-label fw-bold text-secondary small text-uppercase"
+              >Password</label
+            >
             <div class="input-group">
               <input
                 type="password"
@@ -39,17 +50,24 @@
             </div>
           </div>
 
-          <button type="submit" class="btn btn-primary w-100">
+          <button type="submit" class="btn btn-primary w-100 fw-bold mt-2">
             Login to System
           </button>
         </form>
 
         {% if error %}
-        <div class="alert alert-danger mt-3 text-center">{{ error }}</div>
+        <div class="alert alert-danger mt-3 text-center fw-bold">
+          {{ error }}
+        </div>
         {% endif %}
       </div>
-      <div class="card-footer text-muted text-center">
-        <small>Authorized Access Only</small>
+      <div
+        class="card-footer text-muted text-center border-0"
+        style="background-color: var(--vm-bg)"
+      >
+        <small class="fw-bold"
+          ><i class="fa-solid fa-lock me-1"></i> Authorized Access Only</small
+        >
       </div>
     </div>
   </div>
@@ -61,12 +79,10 @@
     var icon = document.getElementById("eyeIcon");
 
     if (passwordInput.type === "password") {
-      // Switch to Text
       passwordInput.type = "text";
       icon.classList.remove("fa-eye");
       icon.classList.add("fa-eye-slash");
     } else {
-      // Switch back to Password
       passwordInput.type = "password";
       icon.classList.remove("fa-eye-slash");
       icon.classList.add("fa-eye");
