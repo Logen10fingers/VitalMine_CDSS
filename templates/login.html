@@ -1,72 +1,224 @@
 {% extends "base.html" %} {% block content %}
-<div class="row justify-content-center mt-5">
-  <div class="col-md-4">
-    <div class="card shadow border-0">
-      <div
-        class="card-header text-white text-center border-0"
-        style="background-color: #2563eb !important"
-      >
-        <h4 class="mb-0 py-1">
-          <i class="fa-solid fa-user-doctor me-1"></i> Staff Login
-        </h4>
+<style>
+  /* --- HIGH-END HOSPITAL BACKGROUND (HIGH VISIBILITY) --- */
+  body {
+    /* Vibrant medical blues shifting visibly */
+    background: linear-gradient(-45deg, #eff6ff, #93c5fd, #3b82f6, #bfdbfe);
+    background-size: 300% 300%;
+    animation: gradientBG 8s ease infinite;
+    position: relative;
+    z-index: 0;
+  }
+
+  /* Telemetry Grid Overlay - Made more visible */
+  body::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+      linear-gradient(rgba(37, 99, 235, 0.15) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37, 99, 235, 0.15) 1px, transparent 1px);
+    background-size: 40px 40px;
+    z-index: -1;
+  }
+
+  /* Dark Mode Adaptation */
+  [data-theme="dark"] body {
+    background: linear-gradient(-45deg, #020617, #1e40af, #0f172a, #1d4ed8);
+    background-size: 300% 300%;
+  }
+  [data-theme="dark"] body::before {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  }
+
+  @keyframes gradientBG {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  /* Heartbeat Animation for the Logo */
+  @keyframes heartbeat {
+    0% {
+      transform: scale(1);
+    }
+    15% {
+      transform: scale(1.15);
+    }
+    30% {
+      transform: scale(1);
+    }
+    45% {
+      transform: scale(1.15);
+    }
+    60% {
+      transform: scale(1);
+    }
+  }
+
+  .login-icon {
+    font-size: 3.5rem;
+    color: white;
+    margin-bottom: 1rem;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+    animation: heartbeat 2.5s infinite;
+  }
+
+  /* --- GLASSMORPHISM CARD --- */
+  .login-card {
+    border-radius: 1.5rem;
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+  }
+
+  [data-theme="dark"] .login-card {
+    background: rgba(30, 41, 59, 0.85) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  }
+
+  .login-header {
+    background: linear-gradient(
+      135deg,
+      rgba(37, 99, 235, 0.95) 0%,
+      rgba(29, 78, 216, 0.95) 100%
+    );
+    padding: 2.5rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .custom-input-group .input-group-text,
+  .custom-input-group .form-control,
+  .custom-input-group .btn {
+    background-color: var(--vm-bg);
+    border-color: var(--vm-card-border);
+    color: var(--vm-text);
+    padding: 0.8rem 1rem;
+  }
+  .custom-input-group .form-control:focus {
+    box-shadow: none;
+    border-color: #2563eb;
+  }
+
+  .btn-login {
+    padding: 0.8rem;
+    border-radius: 0.5rem;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+  }
+  .btn-login:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(37, 99, 235, 0.4);
+  }
+</style>
+
+<div
+  class="row justify-content-center align-items-center"
+  style="min-height: 85vh"
+>
+  <div class="col-md-5 col-lg-4">
+    <div class="card login-card">
+      <div class="login-header text-center text-white border-0">
+        <i class="fa-solid fa-heart-pulse login-icon"></i>
+        <h2 class="fw-bold mb-0">VitalMine CDSS</h2>
+        <p
+          class="text-white-50 small mb-0 mt-1 fw-bold text-uppercase tracking-wide"
+        >
+          Clinical Decision Support
+        </p>
       </div>
-      <div class="card-body p-4" style="background-color: var(--vm-card-bg)">
+
+      <div class="card-body p-4 p-md-5">
+        <h5 class="text-center fw-bold mb-4 text-body">Secure Access Login</h5>
+
         <form method="POST" action="/login">
-          <div class="mb-3">
+          <div class="mb-4">
             <label
               class="form-label fw-bold text-secondary small text-uppercase"
               >Username</label
             >
-            <input
-              type="text"
-              name="username"
-              class="form-control"
-              required
-              autofocus
-            />
+            <div class="input-group custom-input-group shadow-sm rounded">
+              <span class="input-group-text border-end-0 text-primary"
+                ><i class="fa-solid fa-user"></i
+              ></span>
+              <input
+                type="text"
+                name="username"
+                class="form-control border-start-0"
+                placeholder="Enter username"
+                required
+                autofocus
+              />
+            </div>
           </div>
 
-          <div class="mb-3">
+          <div class="mb-4">
             <label
               class="form-label fw-bold text-secondary small text-uppercase"
               >Password</label
             >
-            <div class="input-group">
+            <div class="input-group custom-input-group shadow-sm rounded">
+              <span class="input-group-text border-end-0 text-primary"
+                ><i class="fa-solid fa-lock"></i
+              ></span>
               <input
                 type="password"
                 name="password"
                 id="passwordInput"
-                class="form-control"
+                class="form-control border-start-0 border-end-0"
+                placeholder="Enter password"
                 required
               />
               <button
-                class="btn btn-outline-secondary"
+                class="btn border-start-0 text-secondary"
                 type="button"
                 onclick="togglePassword()"
-                style="z-index: 0"
               >
                 <i class="fa-solid fa-eye" id="eyeIcon"></i>
               </button>
             </div>
           </div>
 
-          <button type="submit" class="btn btn-primary w-100 fw-bold mt-2">
-            Login to System
+          <button
+            type="submit"
+            class="btn btn-primary w-100 btn-login mt-3 shadow-sm"
+          >
+            <i class="fa-solid fa-right-to-bracket me-2"></i> Authenticate
           </button>
         </form>
 
         {% if error %}
-        <div class="alert alert-danger mt-3 text-center fw-bold">
-          {{ error }}
+        <div
+          class="alert alert-danger mt-4 text-center fw-bold border-0 shadow-sm py-2"
+        >
+          <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
         </div>
         {% endif %}
       </div>
+
       <div
-        class="card-footer text-muted text-center border-0"
-        style="background-color: var(--vm-bg)"
+        class="card-footer text-center border-0 py-3"
+        style="background-color: transparent"
       >
-        <small class="fw-bold"
-          ><i class="fa-solid fa-lock me-1"></i> Authorized Access Only</small
+        <small class="text-secondary fw-bold"
+          ><i class="fa-solid fa-shield-halved me-1"></i> End-to-End
+          Encrypted</small
         >
       </div>
     </div>
