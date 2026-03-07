@@ -234,15 +234,20 @@
         <form method="POST" action="/add_vitals">
           <div class="mb-3">
             <label class="form-label fw-bold text-secondary small"
-              >PATIENT NAME</label
+              >SELECT PATIENT</label
             >
-            <input
-              type="text"
+            <select
               name="name"
-              class="form-control"
+              class="form-select border-primary bg-light text-dark fw-bold"
               required
-              placeholder="e.g. patient_om"
-            />
+            >
+              <option value="" disabled selected>
+                -- Choose Admitted Patient --
+              </option>
+              {% for p in patients %}
+              <option value="{{ p.username }}">{{ p.username }}</option>
+              {% endfor %}
+            </select>
           </div>
           <div class="row">
             <div class="col-6 mb-3">

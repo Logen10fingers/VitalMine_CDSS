@@ -64,7 +64,6 @@ def home():
     if current_user.role == "patient":
         return redirect(url_for("patient_dashboard"))
 
-    # Fetch all patients to populate the Digital Twin dropdown
     patients = User.query.filter_by(role="patient").all()
 
     all_entries = Entry.query.order_by(Entry.timestamp.desc()).all()
@@ -74,7 +73,6 @@ def home():
         "stable": sum(1 for e in all_entries if e.status not in ["High", "Critical"]),
     }
 
-    # Admin specific IT statistics
     admin_stats = {}
     if current_user.role == "admin":
         all_users = User.query.all()
@@ -91,13 +89,13 @@ def home():
                 "id": e.id,
                 "time": e.timestamp.strftime("%H:%M:%S"),
                 "name": e.name,
-                "vitals": f"T:{e.temp} / HR:{e.hr} / BP:{e.sys_bp}/{e.dia_bp}",
+                # FIXED: Added RR:{e.rr} so the Respiratory Rate shows up on the dashboard!
+                "vitals": f"T:{e.temp} / HR:{e.hr} / RR:{e.rr} / BP:{e.sys_bp}/{e.dia_bp}",
                 "status": e.status,
                 "advice": e.advice,
             }
         )
 
-    # Passed 'patients' and 'admin_stats' to the template
     return render_template(
         "home.html",
         history=history_data,
@@ -158,7 +156,6 @@ def patients_directory():
 @app.route("/patient_file/<int:patient_id>")
 @login_required
 def patient_file(patient_id):
-    # Only staff can view patient files
     if current_user.role not in ["doctor", "nurse", "admin"]:
         flash("Access Denied.", "danger")
         return redirect(url_for("home"))
@@ -167,7 +164,6 @@ def patient_file(patient_id):
     if not patient or patient.role != "patient":
         return "Patient not found", 404
 
-    # Fetch all vitals history for this specific patient
     history = (
         Entry.query.filter_by(user_id=patient_id).order_by(Entry.timestamp.desc()).all()
     )
@@ -177,11 +173,21 @@ def patient_file(patient_id):
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    # Only Admin, unauthenticated users, or Nurses can access registration
+    if current_user.is_authenticated and current_user.role not in ["admin", "nurse"]:
+        flash("Access Denied.", "danger")
+        return redirect(url_for("home"))
+
     if request.method == "POST":
         username = request.form.get("username")
         email = request.form.get("email")
         password = request.form.get("password")
-        role = request.form.get("role", "patient")
+
+        # If a nurse is creating an account, force the role to 'patient'
+        if current_user.is_authenticated and current_user.role == "nurse":
+            role = "patient"
+        else:
+            role = request.form.get("role", "patient")
 
         age = request.form.get("age")
         gender = request.form.get("gender")
@@ -224,8 +230,12 @@ def register():
         db.session.add(new_user)
         db.session.commit()
 
-        flash("Registration successful! Please log in.", "success")
-        return redirect(url_for("login"))
+        if current_user.is_authenticated and current_user.role == "nurse":
+            flash("Patient successfully registered to the ward.", "success")
+            return redirect(url_for("home"))
+        else:
+            flash("Registration successful! Please log in.", "success")
+            return redirect(url_for("login"))
 
     return render_template("register.html")
 
@@ -267,7 +277,6 @@ def add_vitals():
         rr_raw = request.form.get("resp_rate")
         rr = int(rr_raw) if rr_raw else 18
 
-        # New Blood Pressure Parsing
         sys_bp_raw = request.form.get("sys_bp")
         dia_bp_raw = request.form.get("dia_bp")
         sys_bp = int(sys_bp_raw) if sys_bp_raw else 120
@@ -279,41 +288,53 @@ def add_vitals():
             url_for("patient_dashboard" if current_user.role == "patient" else "home")
         )
 
+    # FIXED: Properly link vitals to registered patients via Dropdown
     if current_user.role == "patient":
         patient_name = current_user.username
         user_id_save = current_user.id
     else:
-        patient_name = request.form.get("name") or current_user.username
-        user_id_save = None
+        patient_name = request.form.get("name")
+        target_patient = User.query.filter_by(
+            username=patient_name, role="patient"
+        ).first()
+        user_id_save = target_patient.id if target_patient else None
 
-    # AI Risk Engine: We silently feed it a healthy WBC (8000) so the model doesn't crash
+    # AI Risk Engine
     ai_risk = "Stable"
     if model:
         df = pd.DataFrame([[temp, hr, rr, 8000.0]], columns=["temp", "hr", "rr", "wbc"])
         if model.predict(df)[0] == 1:
             ai_risk = "High"
 
-    status = "Stable"
-    advice_text = "Vitals are normal. Continue standard care."
-
-    # Clinical Alert Logic - Now heavily checking Blood Pressure!
+    # --- CLINICAL ALGORITHM OVERHAUL (WITH LOWER BOUNDS & RESP RATE) ---
     is_hypotensive = sys_bp <= 90 or dia_bp <= 60
     is_hypertensive_crisis = sys_bp >= 180 or dia_bp >= 120
+    is_severe_bradycardia = hr <= 40
+    is_severe_tachypnea = rr >= 30
+    is_severe_bradypnea = rr <= 8
+    is_severe_hypothermia = temp <= 35.0
 
+    # 1. CRITICAL: Extreme highs OR extreme lows override everything
     if (
-        ai_risk == "High"
-        or hr >= 130
-        or temp >= 39.0
+        hr >= 130
+        or is_severe_bradycardia
+        or temp >= 39.5
+        or is_severe_hypothermia
         or is_hypotensive
         or is_hypertensive_crisis
+        or is_severe_tachypnea
+        or is_severe_bradypnea
     ):
+
         status = "Critical"
         if is_hypotensive:
-            advice_text = "CRITICAL: Severe Hypotension (Low BP) detected! Possible Septic Shock. Seek immediate emergency care."
+            advice_text = "CRITICAL: Severe Hypotension (Shock). Seek immediate care."
+        elif is_severe_bradycardia:
+            advice_text = "CRITICAL: Severe Bradycardia. High risk of cardiac arrest."
+        elif is_severe_tachypnea or is_severe_bradypnea:
+            advice_text = "CRITICAL: Respiratory failure detected. Intubation risk."
         else:
-            advice_text = (
-                "CRITICAL: Severe vitals detected. Proceed to Emergency immediately."
-            )
+            advice_text = "CRITICAL: Severe vitals detected. Code Blue parameters met."
 
         flash(f"🚨 EMERGENCY PROTOCOL: Alert sent for {patient_name}.", "danger")
         send_emergency_alert(
@@ -322,24 +343,41 @@ def add_vitals():
             status,
         )
 
-    elif sys_bp >= 140 or dia_bp >= 90:
-        status = "Warning"
-        advice_text = (
-            "Hypertension detected. Please monitor your blood pressure closely."
-        )
-        flash(f"⚠️ High Blood Pressure Warning for {patient_name}.", "warning")
+    # 2. WARNING: AI model flags early signs OR mild upper/lower threshold breaches
+    elif (
+        ai_risk == "High"
+        or sys_bp >= 140
+        or dia_bp >= 90
+        or temp >= 38.1
+        or temp < 36.0
+        or hr > 100
+        or hr < 60
+        or rr > 20
+        or rr < 12
+    ):
 
-    elif temp > 38.0:
         status = "Warning"
-        advice_text = "High Fever detected. Take antipyretics."
-        flash(f"⚠️ High Fever Warning for {patient_name}.", "warning")
+        advice_text = "Warning: Abnormal vitals detected. Monitor closely."
 
-    elif hr > 100:
-        status = "Warning"
-        advice_text = "Tachycardia. Rest and re-check."
-        flash(f"⚠️ Tachycardia Warning for {patient_name}.", "warning")
+        if ai_risk == "High":
+            advice_text = "AI Warning: Model indicates early SIRS/Sepsis trajectory."
+        elif hr < 60:
+            advice_text = "Bradycardia detected. Monitor heart rate."
+        elif rr > 20 or rr < 12:
+            advice_text = "Abnormal respiratory rate. Assess airway."
+        elif sys_bp >= 140 or dia_bp >= 90:
+            advice_text = "Hypertension detected. Monitor blood pressure."
+        elif temp >= 38.1 or temp < 36.0:
+            advice_text = "Abnormal body temperature detected."
+        elif hr > 100:
+            advice_text = "Tachycardia. Rest and re-check."
 
+        flash(f"⚠️ Warning Alert for {patient_name}. Monitor vitals.", "warning")
+
+    # 3. STABLE: Perfect Goldilocks Zone
     else:
+        status = "Stable"
+        advice_text = "Vitals are normal. Continue standard care."
         flash(f"✅ Vitals logged for {patient_name}.", "success")
 
     new_entry = Entry(
@@ -348,8 +386,8 @@ def add_vitals():
         temp=temp,
         hr=hr,
         rr=rr,
-        sys_bp=sys_bp,  # Saved to DB
-        dia_bp=dia_bp,  # Saved to DB
+        sys_bp=sys_bp,
+        dia_bp=dia_bp,
         status=status,
         advice=advice_text,
     )
@@ -478,9 +516,7 @@ def delete_user(user_id):
                 "System Protection: You cannot delete your own admin account.", "danger"
             )
         else:
-            # First, permanently delete all their recorded vitals from the system
             Entry.query.filter_by(user_id=user_id).delete()
-            # Next, delete the actual user profile
             db.session.delete(user_to_delete)
             db.session.commit()
             flash(
