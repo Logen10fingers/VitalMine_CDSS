@@ -1,6 +1,10 @@
 {% extends "base.html" %} {% block content %}
 <style>
-  /* --- OVERRIDE BASE.HTML TO FORCE FULL SCREEN --- */
+  /* --- FORCE FULL SCREEN & HIDE BASE.HTML ELEMENTS --- */
+  .sidebar,
+  .top-navbar {
+    display: none !important;
+  }
   .main-content {
     margin-left: 0 !important;
     padding: 0 !important;
@@ -18,7 +22,6 @@
     display: flex;
     min-height: 100vh;
     width: 100vw;
-    /* Vibrant gradient with purples, teals, and blues to kill the dullness */
     background: linear-gradient(
       -45deg,
       #0f172a,
@@ -33,7 +36,6 @@
     z-index: 0;
   }
 
-  /* Telemetry Grid Overlay covering everything */
   .login-wrapper::before {
     content: "";
     position: absolute;
@@ -68,13 +70,13 @@
 
   .big-icon {
     font-size: 5.5rem;
-    color: #06b6d4; /* Vibrant Cyan */
+    color: #06b6d4;
     filter: drop-shadow(0 0 25px rgba(6, 182, 212, 0.8));
     animation: heartbeat 2s infinite;
     margin-bottom: 1.5rem;
   }
 
-  /* --- FLOATING HEALTH WIDGETS (THE FUN STARTUP VIBE) --- */
+  /* --- FLOATING HEALTH WIDGETS --- */
   .floating-widget {
     position: absolute;
     background: rgba(255, 255, 255, 0.1);
@@ -102,7 +104,6 @@
     font-size: 1.5rem;
   }
 
-  /* Specific Widget Positioning & Colors */
   .widget-1 {
     top: 15%;
     left: 10%;
@@ -110,7 +111,7 @@
   }
   .widget-1 .widget-icon-box {
     background: rgba(244, 63, 94, 0.2);
-    color: #f43f5e; /* Vibrant Pink/Red */
+    color: #f43f5e;
   }
 
   .widget-2 {
@@ -120,7 +121,7 @@
   }
   .widget-2 .widget-icon-box {
     background: rgba(16, 185, 129, 0.2);
-    color: #10b981; /* Emerald Green */
+    color: #10b981;
   }
 
   .widget-3 {
@@ -133,7 +134,7 @@
   }
   .widget-3 .widget-icon-box {
     background: rgba(245, 158, 11, 0.2);
-    color: #f59e0b; /* Amber/Yellow */
+    color: #f59e0b;
   }
 
   /* --- RIGHT SIDE: GLASS FORM --- */
@@ -143,7 +144,6 @@
     flex-direction: column;
     justify-content: center;
     padding: 3rem;
-    /* Frosted glass effect instead of a solid white/dark box */
     background: rgba(0, 0, 0, 0.35);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -162,20 +162,7 @@
     overflow: hidden;
   }
 
-  /* AI Scanning Line */
-  .scanner-line {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: #a855f7; /* Purple laser */
-    box-shadow: 0 0 15px 3px #a855f7;
-    animation: scan 4s linear infinite;
-    opacity: 0.6;
-  }
-
-  /* Force Inputs to look good regardless of light/dark mode */
+  /* Force Inputs */
   .custom-input-group {
     border: 1px solid rgba(255, 255, 255, 0.3);
     background: rgba(0, 0, 0, 0.2) !important;
@@ -253,22 +240,6 @@
     15%,
     45% {
       transform: scale(1.15);
-    }
-  }
-  @keyframes scan {
-    0% {
-      top: -10%;
-      opacity: 0;
-    }
-    10% {
-      opacity: 0.6;
-    }
-    90% {
-      opacity: 0.6;
-    }
-    100% {
-      top: 110%;
-      opacity: 0;
     }
   }
 
@@ -356,8 +327,6 @@
 
   <div class="form-side">
     <div class="login-card-custom">
-      <div class="scanner-line"></div>
-
       <div class="text-center mb-5 d-lg-none">
         <i class="fa-solid fa-microchip fs-1 text-info mb-2"></i>
         <h2 class="fw-bold text-white">VitalMine CDSS</h2>
@@ -412,6 +381,18 @@
           <i class="fa-solid fa-power-off me-2"></i> Initialize Session
         </button>
       </form>
+
+      <div class="text-center mt-4">
+        <p class="text-white-50 small mb-0">
+          New personnel?
+          <a
+            href="/register"
+            class="fw-bold text-decoration-none"
+            style="color: #67e8f9"
+            >Initialize Registry</a
+          >
+        </p>
+      </div>
 
       {% if error %}
       <div

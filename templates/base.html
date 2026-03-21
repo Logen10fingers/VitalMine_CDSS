@@ -33,7 +33,12 @@
         --vm-card-border: #e3e6f0;
         --vm-text-main: #5a5c69;
         --vm-text-muted: #858796;
-        --vm-topbar-bg: #ffffff;
+        --vm-topbar-bg: rgba(
+          255,
+          255,
+          255,
+          0.85
+        ); /* Slightly transparent for glass effect */
         --vm-grid-line: #e9ecef;
         --vm-organ-base: #e9ecef;
         --vm-organ-stroke: #ced4da;
@@ -48,7 +53,12 @@
         --vm-card-border: #334155;
         --vm-text-main: #e2e8f0;
         --vm-text-muted: #94a3b8;
-        --vm-topbar-bg: #1e293b;
+        --vm-topbar-bg: rgba(
+          30,
+          41,
+          59,
+          0.85
+        ); /* Slightly transparent for glass effect */
         --vm-grid-line: #1e293b;
         --vm-organ-base: #334155;
         --vm-organ-stroke: #475569;
@@ -112,21 +122,26 @@
 
       .main-content {
         margin-left: 250px;
-        padding: 20px;
+        /* KILLED THE GAP: Tightened top padding */
+        padding: 15px 20px 20px 20px;
         min-height: 100vh;
       }
 
       .top-navbar {
         background-color: var(--vm-topbar-bg);
-        border-radius: 8px;
-        padding: 15px 20px;
+        border-radius: 12px; /* Modern rounding */
+        /* KILLED THE GAP: Tightened inner padding */
+        padding: 12px 20px;
         border: 1px solid var(--vm-card-border);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        margin-bottom: 30px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        /* KILLED THE GAP: Drastically reduced bottom margin from 30px to 10px */
+        margin-bottom: 10px;
         display: flex;
         justify-content: space-between;
         align-items: center;
         transition: background-color 0.3s;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
       }
 
       .card {
@@ -203,12 +218,14 @@
           </a>
         </li>
         {% endif %} {% if current_user.role != 'patient' %}
-        <hr class="text-secondary my-3 border-secondary" />
-        <small
-          class="text-muted fw-bold px-4 mb-2 d-block"
-          style="font-size: 0.7rem; letter-spacing: 1px"
-          >ANALYTICS & AI</small
-        >
+        <li class="nav-item w-100 mt-2">
+          <hr class="text-secondary my-2 border-secondary mx-3" />
+          <small
+            class="text-muted fw-bold px-4 mb-2 d-block"
+            style="font-size: 0.7rem; letter-spacing: 1px"
+            >ANALYTICS & AI</small
+          >
+        </li>
 
         <li class="nav-item mb-1">
           <a
@@ -227,12 +244,14 @@
           </a>
         </li>
 
-        <hr class="text-secondary my-3 border-secondary" />
-        <small
-          class="text-muted fw-bold px-4 mb-2 d-block"
-          style="font-size: 0.7rem; letter-spacing: 1px"
-          >ADMINISTRATION</small
-        >
+        <li class="nav-item w-100 mt-2">
+          <hr class="text-secondary my-2 border-secondary mx-3" />
+          <small
+            class="text-muted fw-bold px-4 mb-2 d-block"
+            style="font-size: 0.7rem; letter-spacing: 1px"
+            >ADMINISTRATION</small
+          >
+        </li>
 
         <li class="nav-item mb-1">
           <a
