@@ -17,7 +17,9 @@ from datetime import datetime
 
 # --- MVC IMPORTS ---
 from models import db, User, Entry
-from utils import generate_pdf_report, generate_csv_report, ask_medical_ai
+
+# FIXED: Imported generate_excel_report instead of the old CSV one
+from utils import generate_pdf_report, generate_excel_report, ask_medical_ai
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///vitalmine.db"
@@ -89,7 +91,6 @@ def home():
                 "id": e.id,
                 "time": e.timestamp.strftime("%H:%M:%S"),
                 "name": e.name,
-                # FIXED: Added RR:{e.rr} so the Respiratory Rate shows up on the dashboard!
                 "vitals": f"T:{e.temp} / HR:{e.hr} / RR:{e.rr} / BP:{e.sys_bp}/{e.dia_bp}",
                 "status": e.status,
                 "advice": e.advice,
@@ -173,7 +174,6 @@ def patient_file(patient_id):
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    # Only Admin, unauthenticated users, or Nurses can access registration
     if current_user.is_authenticated and current_user.role not in ["admin", "nurse"]:
         flash("Access Denied.", "danger")
         return redirect(url_for("home"))
@@ -183,7 +183,6 @@ def register():
         email = request.form.get("email")
         password = request.form.get("password")
 
-        # If a nurse is creating an account, force the role to 'patient'
         if current_user.is_authenticated and current_user.role == "nurse":
             role = "patient"
         else:
@@ -288,7 +287,6 @@ def add_vitals():
             url_for("patient_dashboard" if current_user.role == "patient" else "home")
         )
 
-    # FIXED: Properly link vitals to registered patients via Dropdown
     if current_user.role == "patient":
         patient_name = current_user.username
         user_id_save = current_user.id
@@ -306,7 +304,7 @@ def add_vitals():
         if model.predict(df)[0] == 1:
             ai_risk = "High"
 
-    # --- CLINICAL ALGORITHM OVERHAUL (WITH LOWER BOUNDS & RESP RATE) ---
+    # --- CLINICAL ALGORITHM OVERHAUL ---
     is_hypotensive = sys_bp <= 90 or dia_bp <= 60
     is_hypertensive_crisis = sys_bp >= 180 or dia_bp >= 120
     is_severe_bradycardia = hr <= 40
@@ -314,7 +312,6 @@ def add_vitals():
     is_severe_bradypnea = rr <= 8
     is_severe_hypothermia = temp <= 35.0
 
-    # 1. CRITICAL: Extreme highs OR extreme lows override everything
     if (
         hr >= 130
         or is_severe_bradycardia
@@ -325,7 +322,6 @@ def add_vitals():
         or is_severe_tachypnea
         or is_severe_bradypnea
     ):
-
         status = "Critical"
         if is_hypotensive:
             advice_text = "CRITICAL: Severe Hypotension (Shock). Seek immediate care."
@@ -343,7 +339,6 @@ def add_vitals():
             status,
         )
 
-    # 2. WARNING: AI model flags early signs OR mild upper/lower threshold breaches
     elif (
         ai_risk == "High"
         or sys_bp >= 140
@@ -355,7 +350,6 @@ def add_vitals():
         or rr > 20
         or rr < 12
     ):
-
         status = "Warning"
         advice_text = "Warning: Abnormal vitals detected. Monitor closely."
 
@@ -374,7 +368,6 @@ def add_vitals():
 
         flash(f"⚠️ Warning Alert for {patient_name}. Monitor vitals.", "warning")
 
-    # 3. STABLE: Perfect Goldilocks Zone
     else:
         status = "Stable"
         advice_text = "Vitals are normal. Continue standard care."
@@ -408,12 +401,13 @@ def generate_pdf(entry_id):
     return generate_pdf_report(entry)
 
 
+# FIXED: Call the correct Excel generation function
 @app.route("/export_data")
 @login_required
 def export_data():
     if current_user.role in ["nurse", "patient"]:
         return "Access Denied"
-    return generate_csv_report(Entry.query.order_by(Entry.timestamp.desc()).all())
+    return generate_excel_report(Entry.query.order_by(Entry.timestamp.desc()).all())
 
 
 @app.route("/chat_with_ai", methods=["POST"])
@@ -427,7 +421,6 @@ def chat_with_ai():
         .first()
     )
 
-    # FIXED: Added the 'rr' (respiratory rate) into the context so the AI can see it!
     if last_entry:
         context = {
             "name": current_user.username,
@@ -495,7 +488,6 @@ def staff_directory():
         flash("Access Denied. Administrator privileges required.", "danger")
         return redirect(url_for("home"))
 
-    # Query users separated by role
     doctors = User.query.filter_by(role="doctor").all()
     nurses = User.query.filter_by(role="nurse").all()
     patients = User.query.filter_by(role="patient").all()
@@ -516,19 +508,18 @@ def edit_user(user_id):
         flash("User not found.", "danger")
         return redirect(url_for("staff_directory"))
 
-    # Update common fields
     new_username = request.form.get("username")
     if new_username:
-        # Check if username is taken by someone else
         existing_user = User.query.filter_by(username=new_username).first()
         if existing_user and existing_user.id != user_id:
             flash(f"Username '{new_username}' is already taken.", "danger")
             return redirect(url_for("staff_directory"))
+
         user_to_edit.username = new_username
+        Entry.query.filter_by(user_id=user_id).update({"name": new_username})
 
     user_to_edit.email = request.form.get("email")
 
-    # Update role-specific fields
     if user_to_edit.role in ["doctor", "nurse", "admin"]:
         user_to_edit.emp_id = request.form.get("emp_id")
         user_to_edit.department = request.form.get("department")
