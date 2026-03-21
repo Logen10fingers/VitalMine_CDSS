@@ -1,171 +1,450 @@
 {% extends "base.html" %} {% block content %}
 
+<style>
+  /* --- RICH GREEN ICU COMMAND CENTER --- */
+
+  /* LIGHT MODE: Crisp Mint & Rich Emerald */
+  :root,
+  [data-bs-theme="light"] {
+    --vm-bg: #ecfdf5; /* Very soft mint green */
+    --vm-card-bg: #ffffff;
+    --vm-card-border: #a7f3d0;
+    --vm-text-main: #064e3b; /* Deep forest green text */
+    --vm-text-muted: #059669;
+    --vm-accent: #10b981; /* Vibrant Emerald */
+    --accent-glow: rgba(16, 185, 129, 0.2);
+    --bot-bg: linear-gradient(135deg, #059669, #10b981);
+    --twin-grid: rgba(16, 185, 129, 0.15);
+  }
+
+  /* DARK MODE: Deep Forest & Neon Green */
+  [data-bs-theme="dark"] {
+    --vm-bg: #022c22; /* Extremely dark forest green */
+    --vm-card-bg: #064e3b; /* Dark slate green */
+    --vm-card-border: #047857;
+    --vm-text-main: #ecfdf5;
+    --vm-text-muted: #6ee7b7;
+    --vm-accent: #34d399; /* Neon Mint */
+    --accent-glow: rgba(52, 211, 153, 0.25);
+    --bot-bg: linear-gradient(135deg, #047857, #10b981);
+    --twin-grid: rgba(52, 211, 153, 0.1);
+  }
+
+  /* Top Stat Cards */
+  .hud-stat-card {
+    background: var(--vm-card-bg);
+    border: 1px solid var(--vm-card-border);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px var(--accent-glow);
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .hud-stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  }
+
+  .hud-stat-accent {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 6px;
+  }
+
+  /* Digital Twin Layout */
+  .twin-stage {
+    position: relative;
+    height: 500px;
+    background-color: var(--vm-bg);
+    border-radius: 0 0 12px 12px;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .twin-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+      linear-gradient(var(--twin-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--twin-grid) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Floating Biometric Panels */
+  .bio-panel {
+    background: var(--vm-card-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--vm-card-border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    position: absolute;
+    z-index: 10;
+    min-width: 150px;
+  }
+
+  /* Position the 5 panels around the avatar */
+  .panel-temp {
+    top: 15%;
+    left: 8%;
+    border-left: 4px solid #f59e0b;
+  }
+  .panel-resp {
+    top: 60%;
+    left: 8%;
+    border-left: 4px solid #3b82f6;
+  }
+  .panel-hr {
+    top: 15%;
+    right: 8%;
+    border-right: 4px solid #ef4444;
+    text-align: right;
+  }
+  .panel-bp {
+    top: 40%;
+    right: 8%;
+    border-right: 4px solid #f43f5e;
+    text-align: right;
+  }
+  .panel-stat {
+    top: 75%;
+    right: 8%;
+    border-right: 4px solid var(--vm-accent);
+    text-align: right;
+  }
+
+  .bio-label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--vm-text-muted);
+    margin-bottom: 2px;
+  }
+
+  .bio-value {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--vm-text-main);
+    line-height: 1;
+  }
+
+  .bio-unit {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--vm-text-muted);
+    margin-left: 4px;
+  }
+
+  /* Leader Lines connecting panels to avatar */
+  .leader-line {
+    position: absolute;
+    border-top: 1px dashed var(--vm-accent);
+    opacity: 0.5;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .line-temp {
+    top: 20%;
+    left: 18%;
+    width: 25%;
+  }
+  .line-resp {
+    top: 65%;
+    left: 18%;
+    width: 23%;
+    border-top-color: #3b82f6;
+  }
+  .line-hr {
+    top: 20%;
+    right: 18%;
+    width: 25%;
+    border-top-color: #ef4444;
+  }
+  .line-bp {
+    top: 45%;
+    right: 18%;
+    width: 23%;
+    border-top-color: #f43f5e;
+  }
+
+  /* Ward Activity Table */
+  .live-feed-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+  }
+
+  .live-feed-table th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--vm-text-muted);
+    border: none;
+    padding: 10px 16px;
+  }
+
+  .live-feed-row {
+    background-color: var(--vm-card-bg);
+    box-shadow: 0 2px 8px var(--accent-glow);
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
+  }
+
+  .live-feed-row:hover {
+    transform: translateY(-2px) scale(1.005);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+  }
+
+  .live-feed-row td {
+    padding: 16px;
+    border-top: 1px solid var(--vm-card-border);
+    border-bottom: 1px solid var(--vm-card-border);
+    vertical-align: middle;
+  }
+
+  .live-feed-row td:first-child {
+    border-left: 1px solid var(--vm-card-border);
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+  }
+
+  .live-feed-row td:last-child {
+    border-right: 1px solid var(--vm-card-border);
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+  }
+
+  /* Vital Sign Badges in Table */
+  .vital-tag {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: var(--vm-bg);
+    border: 1px solid var(--vm-card-border);
+    font-family: monospace;
+    font-size: 0.85rem;
+    margin-right: 4px;
+    color: var(--vm-text-main);
+  }
+
+  /* Extreme Alert Pulsing */
+  .alert-strobe {
+    background: #ef4444;
+    color: white;
+    font-weight: bold;
+    border: none;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+    animation: strobe 1.5s infinite alternate;
+  }
+
+  @keyframes strobe {
+    0% {
+      opacity: 1;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+    }
+    100% {
+      opacity: 0.8;
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.9);
+    }
+  }
+
+  @keyframes bpAuraPulse {
+    0% {
+      opacity: 0.3;
+      stroke-width: 5;
+    }
+    100% {
+      opacity: 0.8;
+      stroke-width: 15;
+    }
+  }
+</style>
+
 <div
-  class="alert alert-info d-flex justify-content-between align-items-center shadow-sm mb-4"
+  class="alert d-flex justify-content-between align-items-center shadow-sm mb-4 rounded-3"
   style="
     background-color: var(--vm-card-bg);
     border: 1px solid var(--vm-card-border);
     border-left: 5px solid var(--vm-accent);
   "
 >
-  <span class="text-body">
-    <i class="fa-solid fa-user-tag"></i> Logged in as:
-    <strong class="text-body">{{ current_user.username.upper() }}</strong>
-    <span class="badge bg-secondary ms-2">{{ current_user.role.upper() }}</span>
+  <span>
+    <i class="fa-solid fa-user-shield me-2 text-secondary"></i>
+    <span class="text-secondary small text-uppercase fw-bold"
+      >Active Session:</span
+    >
+    <strong class="text-body ms-1 fs-5"
+      >{{ current_user.username.upper() }}</strong
+    >
+    <span class="badge bg-dark ms-2 text-uppercase" style="letter-spacing: 1px"
+      >{{ current_user.role }}</span
+    >
   </span>
-  <span id="system-clock" class="small font-monospace text-body">
-    <i class="fas fa-satellite-dish me-1"></i> System Online
+  <span id="system-clock" class="font-monospace text-body fw-medium">
+    <i class="fas fa-satellite-dish me-1" style="color: var(--vm-accent)"></i>
+    Telemetry Online
   </span>
 </div>
 
 {% if current_user.role in ['admin', 'doctor'] %}
-<div class="row mb-4">
+<div class="row g-4 mb-4">
   {% if current_user.role == 'admin' %}
-  <div class="col-md-4 mb-3">
-    <div
-      class="card h-100 py-2"
-      style="border-left: 4px solid var(--vm-accent)"
-    >
-      <div class="card-body">
-        <div class="row align-items-center">
-          <div class="col">
-            <div
-              class="text-xs fw-bold text-uppercase mb-1"
-              style="font-size: 0.8rem; color: var(--vm-accent)"
-            >
-              Total System Users
-            </div>
-            <div class="h3 mb-0 fw-bold text-body">
-              {{ admin_stats.total_users }}
-            </div>
+  <div class="col-md-4">
+    <div class="hud-stat-card p-3">
+      <div class="hud-stat-accent bg-info"></div>
+      <div class="d-flex justify-content-between align-items-center ms-3">
+        <div>
+          <div
+            class="text-uppercase fw-bold text-muted small tracking-wide mb-1"
+          >
+            Total System Users
           </div>
-          <div class="col-auto">
-            <i
-              class="fa-solid fa-users-gear fa-2x text-secondary opacity-50"
-            ></i>
+          <div class="fs-2 fw-black text-body lh-1">
+            {{ admin_stats.total_users }}
           </div>
+        </div>
+        <div class="bg-info bg-opacity-10 p-3 rounded-circle">
+          <i class="fa-solid fa-users-gear fa-2x text-info"></i>
         </div>
       </div>
     </div>
   </div>
-  <div class="col-md-4 mb-3">
-    <div class="card h-100 py-2" style="border-left: 4px solid #818cf8">
-      <div class="card-body">
-        <div class="row align-items-center">
-          <div class="col">
-            <div
-              class="text-xs fw-bold text-uppercase mb-1"
-              style="font-size: 0.8rem; color: #818cf8"
-            >
-              Active Medical Staff
-            </div>
-            <div class="h3 mb-0 fw-bold text-body">
-              {{ admin_stats.staff_count }}
-            </div>
+  <div class="col-md-4">
+    <div class="hud-stat-card p-3">
+      <div class="hud-stat-accent" style="background-color: #818cf8"></div>
+      <div class="d-flex justify-content-between align-items-center ms-3">
+        <div>
+          <div
+            class="text-uppercase fw-bold text-muted small tracking-wide mb-1"
+          >
+            Active Medical Staff
           </div>
-          <div class="col-auto">
-            <i
-              class="fa-solid fa-user-doctor fa-2x text-secondary opacity-50"
-            ></i>
+          <div class="fs-2 fw-black text-body lh-1">
+            {{ admin_stats.staff_count }}
           </div>
+        </div>
+        <div
+          class="p-3 rounded-circle"
+          style="background-color: rgba(129, 140, 248, 0.1)"
+        >
+          <i class="fa-solid fa-user-doctor fa-2x" style="color: #818cf8"></i>
         </div>
       </div>
     </div>
   </div>
-  <div class="col-md-4 mb-3">
-    <div class="card h-100 py-2" style="border-left: 4px solid #10b981">
-      <div class="card-body">
-        <div class="row align-items-center">
-          <div class="col">
-            <div
-              class="text-xs fw-bold text-success text-uppercase mb-1"
-              style="font-size: 0.8rem"
-            >
-              Registered Patients
-            </div>
-            <div class="h3 mb-0 fw-bold text-body">
-              {{ admin_stats.patient_count }}
-            </div>
+  <div class="col-md-4">
+    <div class="hud-stat-card p-3">
+      <div
+        class="hud-stat-accent"
+        style="background-color: var(--vm-accent)"
+      ></div>
+      <div class="d-flex justify-content-between align-items-center ms-3">
+        <div>
+          <div
+            class="text-uppercase fw-bold text-muted small tracking-wide mb-1"
+          >
+            Registered Patients
           </div>
-          <div class="col-auto">
-            <i
-              class="fa-solid fa-bed-pulse fa-2x text-secondary opacity-50"
-            ></i>
+          <div class="fs-2 fw-black text-body lh-1">
+            {{ admin_stats.patient_count }}
           </div>
+        </div>
+        <div class="p-3 rounded-circle" style="background: var(--accent-glow)">
+          <i
+            class="fa-solid fa-bed-pulse fa-2x"
+            style="color: var(--vm-accent)"
+          ></i>
         </div>
       </div>
     </div>
   </div>
   {% else %}
-  <div class="col-md-4 mb-3">
+  <div class="col-md-4">
+    <div class="hud-stat-card p-3">
+      <div class="hud-stat-accent" style="background-color: #3b82f6"></div>
+      <div class="d-flex justify-content-between align-items-center ms-3">
+        <div>
+          <div
+            class="text-uppercase fw-bold text-muted small tracking-wide mb-1"
+          >
+            Total Ward Logs
+          </div>
+          <div class="fs-2 fw-black text-body lh-1">
+            {{ stats.total if stats else 0 }}
+          </div>
+        </div>
+        <div
+          class="p-3 rounded-circle"
+          style="background-color: rgba(59, 130, 246, 0.1)"
+        >
+          <i class="fa-solid fa-server fa-2x" style="color: #3b82f6"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
     <div
-      class="card h-100 py-2"
-      style="border-left: 4px solid var(--vm-accent)"
+      class="hud-stat-card p-3"
+      style="border: 1px solid rgba(239, 68, 68, 0.3)"
     >
-      <div class="card-body">
-        <div class="row align-items-center">
-          <div class="col">
-            <div
-              class="text-xs fw-bold text-uppercase mb-1"
-              style="font-size: 0.8rem; color: var(--vm-accent)"
-            >
-              Total Ward Logs
-            </div>
-            <div class="h3 mb-0 fw-bold text-body">
-              {{ stats.total if stats else 0 }}
-            </div>
+      <div class="hud-stat-accent bg-danger"></div>
+      <div class="d-flex justify-content-between align-items-center ms-3">
+        <div>
+          <div
+            class="text-uppercase fw-bold text-danger small tracking-wide mb-1"
+          >
+            Critical Alerts (Sepsis)
           </div>
-          <div class="col-auto">
-            <i class="fa-solid fa-server fa-2x text-secondary opacity-50"></i>
+          <div class="fs-2 fw-black text-danger lh-1">
+            {{ stats.high if stats else 0 }}
           </div>
+        </div>
+        <div class="bg-danger bg-opacity-10 p-3 rounded-circle">
+          <i
+            class="fa-solid fa-triangle-exclamation fa-2x text-danger"
+            style="animation: pulse 2s infinite"
+          ></i>
         </div>
       </div>
     </div>
   </div>
-  <div class="col-md-4 mb-3">
-    <div class="card h-100 py-2" style="border-left: 4px solid #ef4444">
-      <div class="card-body">
-        <div class="row align-items-center">
-          <div class="col">
-            <div
-              class="text-xs fw-bold text-danger text-uppercase mb-1"
-              style="font-size: 0.8rem"
-            >
-              Critical Alerts (Sepsis)
-            </div>
-            <div class="h3 mb-0 fw-bold text-body">
-              {{ stats.high if stats else 0 }}
-            </div>
+  <div class="col-md-4">
+    <div class="hud-stat-card p-3">
+      <div
+        class="hud-stat-accent"
+        style="background-color: var(--vm-accent)"
+      ></div>
+      <div class="d-flex justify-content-between align-items-center ms-3">
+        <div>
+          <div
+            class="text-uppercase fw-bold text-muted small tracking-wide mb-1"
+          >
+            Stable Readings
           </div>
-          <div class="col-auto">
-            <i
-              class="fa-solid fa-triangle-exclamation fa-2x text-secondary opacity-50"
-            ></i>
+          <div class="fs-2 fw-black text-body lh-1">
+            {{ stats.stable if stats else 0 }}
           </div>
         </div>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-4 mb-3">
-    <div class="card h-100 py-2" style="border-left: 4px solid #10b981">
-      <div class="card-body">
-        <div class="row align-items-center">
-          <div class="col">
-            <div
-              class="text-xs fw-bold text-success text-uppercase mb-1"
-              style="font-size: 0.8rem"
-            >
-              Stable Readings
-            </div>
-            <div class="h3 mb-0 fw-bold text-body">
-              {{ stats.stable if stats else 0 }}
-            </div>
-          </div>
-          <div class="col-auto">
-            <i
-              class="fa-solid fa-heart-circle-check fa-2x text-secondary opacity-50"
-            ></i>
-          </div>
+        <div class="p-3 rounded-circle" style="background: var(--accent-glow)">
+          <i
+            class="fa-solid fa-heart-circle-check fa-2x"
+            style="color: var(--vm-accent)"
+          ></i>
         </div>
       </div>
     </div>
@@ -177,16 +456,24 @@
 <div class="row">
   {% if current_user.role == 'admin' %}
   <div class="col-md-4">
-    <div class="card mb-4 border-0 shadow-sm">
-      <div class="card-header bg-dark text-white border-0">
-        <h5 class="mb-0">
-          <i class="fa-solid fa-server me-2"></i> System Control Panel
-        </h5>
-      </div>
+    <div
+      class="card mb-4 border-0 shadow-sm"
+      style="
+        border-radius: 12px;
+        overflow: hidden;
+        background-color: var(--vm-card-bg);
+        border: 1px solid var(--vm-card-border);
+      "
+    >
       <div
-        class="card-body rounded-bottom text-center p-4"
-        style="background-color: var(--vm-card-bg)"
+        class="card-header text-white border-0 py-3"
+        style="background: var(--bot-bg)"
       >
+        <h6 class="mb-0 fw-bold text-uppercase tracking-wide">
+          <i class="fa-solid fa-server me-2"></i> System Control
+        </h6>
+      </div>
+      <div class="card-body text-center p-4">
         <i
           class="fa-solid fa-database fa-4x text-secondary opacity-25 mb-3"
         ></i>
@@ -197,21 +484,23 @@
 
         <a
           href="/staff"
-          class="btn btn-primary w-100 mb-3 fw-bold py-2 shadow-sm text-start"
+          class="btn text-white w-100 mb-3 fw-bold py-2 shadow-sm text-start rounded-3"
+          style="background-color: #3b82f6"
         >
           <i class="fa-solid fa-users-gear w-20px text-center me-2"></i> Manage
           Users
         </a>
         <a
           href="/register"
-          class="btn btn-info text-white w-100 mb-3 fw-bold py-2 shadow-sm text-start"
+          class="btn btn-info text-white w-100 mb-3 fw-bold py-2 shadow-sm text-start rounded-3"
         >
           <i class="fa-solid fa-user-plus w-20px text-center me-2"></i> Register
           New Staff
         </a>
         <a
           href="/export_data"
-          class="btn btn-success w-100 mb-3 fw-bold py-2 shadow-sm text-start"
+          class="btn text-white w-100 mb-3 fw-bold py-2 shadow-sm text-start rounded-3"
+          style="background-color: var(--vm-accent)"
         >
           <i class="fa-solid fa-cloud-arrow-down w-20px text-center me-2"></i>
           Backup Ward DB
@@ -219,26 +508,40 @@
       </div>
     </div>
   </div>
+
   {% elif current_user.role == 'nurse' %}
   <div class="col-md-4">
-    <div class="card mb-4 border-0 shadow-sm">
+    <div
+      class="card mb-4 border-0 shadow-sm"
+      style="
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid var(--vm-card-border);
+        background-color: var(--vm-card-bg);
+      "
+    >
       <div
-        class="card-header text-white border-0"
-        style="background-color: #2563eb !important"
+        class="card-header text-white border-0 py-3"
+        style="background: var(--bot-bg)"
       >
-        <h5 class="mb-0">
-          <i class="fa-solid fa-stethoscope"></i> New Vitals Entry
-        </h5>
+        <h6 class="mb-0 fw-bold text-uppercase tracking-wide">
+          <i class="fa-solid fa-stethoscope me-2"></i> New Vitals Entry
+        </h6>
       </div>
       <div class="card-body">
         <form method="POST" action="/add_vitals">
           <div class="mb-3">
-            <label class="form-label fw-bold text-secondary small"
+            <label class="form-label fw-bold text-muted small"
               >SELECT PATIENT</label
             >
             <select
               name="name"
-              class="form-select border-primary bg-light text-dark fw-bold"
+              class="form-select fw-bold rounded-3"
+              style="
+                border-color: var(--vm-accent);
+                background-color: var(--vm-bg);
+                color: var(--vm-text-main);
+              "
               required
             >
               <option value="" disabled selected>
@@ -249,68 +552,101 @@
               {% endfor %}
             </select>
           </div>
-          <div class="row">
+          <div class="row g-2">
             <div class="col-6 mb-3">
-              <label class="form-label fw-bold text-secondary small"
+              <label class="form-label fw-bold text-muted small"
                 >TEMP (°C)</label
               >
               <input
                 type="number"
                 step="0.1"
                 name="temperature"
-                class="form-control"
+                class="form-control rounded-3"
+                style="
+                  background-color: var(--vm-bg);
+                  color: var(--vm-text-main);
+                  border-color: var(--vm-card-border);
+                "
                 required
               />
             </div>
             <div class="col-6 mb-3">
-              <label class="form-label fw-bold text-secondary small"
+              <label class="form-label fw-bold text-muted small"
                 >HEART RATE</label
               >
               <input
                 type="number"
                 name="heart_rate"
-                class="form-control"
+                class="form-control rounded-3"
+                style="
+                  background-color: var(--vm-bg);
+                  color: var(--vm-text-main);
+                  border-color: var(--vm-card-border);
+                "
                 required
               />
             </div>
           </div>
-          <div class="row">
+          <div class="row g-2">
             <div class="col-6 mb-3">
-              <label class="form-label fw-bold text-secondary small"
+              <label class="form-label fw-bold text-muted small"
                 >RESP. RATE</label
               >
               <input
                 type="number"
                 name="resp_rate"
-                class="form-control"
+                class="form-control rounded-3"
+                style="
+                  background-color: var(--vm-bg);
+                  color: var(--vm-text-main);
+                  border-color: var(--vm-card-border);
+                "
                 required
               />
             </div>
             <div class="col-6 mb-3">
-              <label class="form-label fw-bold text-secondary small"
+              <label class="form-label fw-bold text-muted small"
                 >BLOOD PRESSURE</label
               >
               <div class="input-group">
                 <input
                   type="number"
                   name="sys_bp"
-                  class="form-control px-1"
+                  class="form-control px-1 rounded-start-3"
                   placeholder="120"
+                  style="
+                    background-color: var(--vm-bg);
+                    color: var(--vm-text-main);
+                    border-color: var(--vm-card-border);
+                  "
                   required
                 />
-                <span class="input-group-text px-1">/</span>
+                <span
+                  class="input-group-text px-1 border-top border-bottom border-secondary-subtle"
+                  style="background-color: var(--vm-bg)"
+                  >/</span
+                >
                 <input
                   type="number"
                   name="dia_bp"
-                  class="form-control px-1"
+                  class="form-control px-1 rounded-end-3"
                   placeholder="80"
+                  style="
+                    background-color: var(--vm-bg);
+                    color: var(--vm-text-main);
+                    border-color: var(--vm-card-border);
+                  "
                   required
                 />
               </div>
             </div>
           </div>
-          <button type="submit" class="btn btn-primary w-100 fw-bold mt-2">
-            <i class="fa-solid fa-microscope"></i> Analyze (AI)
+          <button
+            type="submit"
+            class="btn text-white w-100 fw-bold mt-2 py-2 rounded-3"
+            style="background: var(--bot-bg)"
+          >
+            <i class="fa-solid fa-microscope me-2"></i> Analyze (AI)
           </button>
         </form>
       </div>
@@ -322,245 +658,309 @@
     class="{% if current_user.role == 'doctor' %}col-md-12{% else %}col-md-8{% endif %}"
   >
     {% if current_user.role in ['admin', 'doctor'] %}
-    <div class="card mb-4">
+    <div
+      class="card mb-5 border-0 shadow-sm"
+      style="border-radius: 12px; border: 1px solid var(--vm-card-border)"
+    >
       <div
-        class="card-header d-flex flex-row align-items-center justify-content-between"
+        class="card-header border-bottom d-flex align-items-center justify-content-between py-3"
+        style="
+          background-color: var(--vm-card-bg);
+          border-color: var(--vm-card-border) !important;
+        "
       >
-        <h6 class="m-0 fw-bold text-body d-flex align-items-center">
+        <h5 class="m-0 fw-black text-body text-uppercase tracking-wide">
           <i
-            class="fas fa-street-view me-2"
+            class="fa-solid fa-vr-cardboard me-2"
             style="color: var(--vm-accent)"
           ></i>
-          Real-Time Digital Twin
+          Digital Twin HUD
           <select
             id="dt-patient-selector"
-            class="form-select form-select-sm ms-3 d-inline-block w-auto shadow-sm"
+            class="form-select form-select-sm ms-3 d-inline-block w-auto shadow-sm fw-bold border-secondary text-body"
+            style="background-color: var(--vm-bg)"
             onchange="updateDigitalTwin()"
           >
+            <option value="" disabled selected>-- Select Patient --</option>
             {% for p in patients %}
             <option value="{{ p.id }}">{{ p.username }}</option>
             {% endfor %}
           </select>
-        </h6>
-        <span id="twinStatus" class="badge bg-secondary">Syncing...</span>
-      </div>
-      <div
-        class="card-body text-center"
-        style="
-          position: relative;
-          overflow: hidden;
-          height: 400px;
-          background-color: var(--vm-bg);
-          border-bottom-left-radius: 8px;
-          border-bottom-right-radius: 8px;
-        "
-      >
-        <div
-          style="
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image:
-              linear-gradient(var(--vm-grid-line) 1px, transparent 1px),
-              linear-gradient(90deg, var(--vm-grid-line) 1px, transparent 1px);
-            background-size: 50px 50px;
-            pointer-events: none;
-          "
-        ></div>
-
-        <div
-          class="digital-twin-container"
-          style="height: 100%; position: relative; z-index: 1"
+        </h5>
+        <span id="twinStatus" class="badge bg-secondary px-3 py-2 rounded-pill"
+          ><i class="fa-solid fa-arrows-rotate fa-spin me-1"></i> Awaiting
+          Selection...</span
         >
+      </div>
+
+      <div class="twin-stage">
+        <div class="twin-grid"></div>
+
+        <div class="bio-panel panel-temp">
+          <div class="bio-label text-warning">Core Temp</div>
+          <div>
+            <span id="val-temp" class="bio-value">--</span
+            ><span class="bio-unit">°C</span>
+          </div>
+        </div>
+        <div class="leader-line line-temp"></div>
+
+        <div class="bio-panel panel-resp">
+          <div class="bio-label text-info">Respiration</div>
+          <div>
+            <span id="val-rr" class="bio-value">--</span
+            ><span class="bio-unit">bpm</span>
+          </div>
+        </div>
+        <div class="leader-line line-resp"></div>
+
+        <div class="bio-panel panel-hr">
+          <div class="bio-label text-danger">Heart Rate</div>
+          <div>
+            <span id="val-hr" class="bio-value">--</span
+            ><span class="bio-unit">bpm</span>
+          </div>
+        </div>
+        <div class="leader-line line-hr"></div>
+
+        <div class="bio-panel panel-bp">
+          <div class="bio-label" style="color: #f43f5e">Blood Pressure</div>
+          <div>
+            <span id="val-bp" class="bio-value" style="font-size: 1.4rem"
+              >--/--</span
+            >
+          </div>
+        </div>
+        <div class="leader-line line-bp"></div>
+
+        <div class="bio-panel panel-stat">
+          <div class="bio-label" style="color: var(--vm-accent)">AI Status</div>
+          <div class="mt-1">
+            <span id="val-status" class="badge bg-secondary fs-6 rounded-pill"
+              >UNKNOWN</span
+            >
+          </div>
+        </div>
+
+        <div class="digital-twin-container" style="height: 90%; z-index: 20">
           <svg
             viewBox="0 0 200 400"
             style="
               height: 100%;
-              filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.2));
+              filter: drop-shadow(0 0 20px rgba(16, 185, 129, 0.2));
             "
           >
             <path
+              id="body-aura"
               d="M100,30 C115,30 125,40 125,55 C125,75 115,85 100,85 C85,85 75,75 75,55 C75,40 85,30 100,30 Z M65,100 C60,100 50,105 45,130 L35,220 C35,230 45,230 50,220 L60,150 L65,220 L75,360 C75,370 95,370 95,360 L95,260 L105,260 L105,360 C105,370 125,370 125,360 L135,220 L140,150 L150,220 C155,230 165,230 165,220 L155,130 C150,105 140,100 135,100 L65,100 Z"
               style="
-                fill: var(--vm-card-bg);
-                stroke: var(--vm-organ-stroke);
+                fill: none;
+                stroke: transparent;
+                stroke-width: 8;
+                filter: blur(6px);
+              "
+            />
+
+            <path
+              d="M100,30 C115,30 125,40 125,55 C125,75 115,85 100,85 C85,85 75,75 75,55 C75,40 85,30 100,30 Z M65,100 C60,100 50,105 45,130 L35,220 C35,230 45,230 50,220 L60,150 L65,220 L75,360 C75,370 95,370 95,360 L95,260 L105,260 L105,360 C105,370 125,370 125,360 L135,220 L140,150 L150,220 C155,230 165,230 165,220 L155,130 C150,105 140,100 135,100 L65,100 Z"
+              style="
+                fill: rgba(148, 163, 184, 0.1);
+                stroke: var(--vm-accent);
                 stroke-width: 2;
               "
             />
+
             <circle
               id="organ-head"
               cx="100"
               cy="55"
-              r="20"
-              style="fill: var(--vm-organ-base)"
-              opacity="0.8"
+              r="18"
+              style="fill: rgba(148, 163, 184, 0.5); transition: fill 0.5s"
             />
-            <path
-              id="organ-lungs"
-              d="M85,110 Q75,140 85,170 Q95,140 85,110 M115,110 Q125,140 115,170 Q105,140 115,110"
-              style="
-                fill: var(--vm-organ-base);
-                stroke: var(--vm-organ-stroke);
-                stroke-width: 1;
-              "
-              opacity="0.8"
-            />
+
+            <g id="lung-group">
+              <path
+                id="organ-lungs"
+                d="M85,110 Q75,140 85,170 Q95,140 85,110 M115,110 Q125,140 115,170 Q105,140 115,110"
+                style="fill: rgba(148, 163, 184, 0.5); transition: fill 0.5s"
+              />
+              <animateTransform
+                id="anim-lungs"
+                attributeName="transform"
+                type="scale"
+                values="1;1.05;1"
+                dur="2s"
+                repeatCount="indefinite"
+                transform-origin="100 140"
+              />
+            </g>
+
             <path
               id="organ-heart"
               d="M100,145 L95,140 A5,5 0 0,1 100,135 A5,5 0 0,1 105,140 Z"
               transform="scale(2.5) translate(-60, -85)"
-              style="fill: var(--vm-organ-base)"
-              opacity="0.8"
+              style="fill: rgba(148, 163, 184, 0.5); transition: fill 0.5s"
             >
               <animateTransform
+                id="anim-heart"
                 attributeName="transform"
                 type="scale"
                 values="2.5;2.8;2.5"
-                dur="1s"
+                dur="1.2s"
                 repeatCount="indefinite"
               />
             </path>
-            <text
-              x="100"
-              y="390"
-              text-anchor="middle"
-              class="text-secondary"
-              font-size="10"
-              font-family="sans-serif fw-bold"
+
+            <line
+              x1="20"
+              y1="0"
+              x2="180"
+              y2="0"
+              stroke="var(--vm-accent)"
+              stroke-width="1"
+              opacity="0.6"
             >
-              LIVE SCAN MODE
-            </text>
+              <animate
+                attributeName="y1"
+                values="0;400;0"
+                dur="4s"
+                repeatCount="indefinite"
+              />
+              <animate
+                attributeName="y2"
+                values="0;400;0"
+                dur="4s"
+                repeatCount="indefinite"
+              />
+            </line>
           </svg>
-
-          <div
-            style="position: absolute; top: 20px; left: 20px; text-align: left"
-          >
-            <div
-              class="card p-2 mb-2"
-              style="
-                border-left: 4px solid var(--vm-accent);
-                background-color: var(--vm-card-bg);
-              "
-            >
-              <small class="text-secondary fw-bold">TEMPERATURE</small>
-              <div>
-                <span id="val-temp" class="h4 text-body fw-bold">--</span
-                ><span class="text-secondary small">°C</span>
-              </div>
-            </div>
-            <div
-              class="card p-2"
-              style="
-                border-left: 4px solid #818cf8;
-                background-color: var(--vm-card-bg);
-              "
-            >
-              <small class="text-secondary fw-bold">RESPIRATION</small>
-              <div>
-                <span id="val-rr" class="h4 text-body fw-bold">--</span
-                ><span class="text-secondary small">/min</span>
-              </div>
-            </div>
-          </div>
-
-          <div
-            style="
-              position: absolute;
-              top: 20px;
-              right: 20px;
-              text-align: right;
-            "
-          >
-            <div
-              class="card p-2 mb-2"
-              style="
-                border-left: 4px solid #ef4444;
-                background-color: var(--vm-card-bg);
-              "
-            >
-              <small class="text-secondary fw-bold">HEART RATE</small>
-              <div>
-                <span id="val-hr" class="h4 text-body fw-bold">--</span
-                ><span class="text-secondary small">BPM</span>
-              </div>
-            </div>
-            <div class="card p-2" style="background-color: var(--vm-card-bg)">
-              <small class="text-secondary fw-bold">STATUS</small>
-              <div class="mt-1">
-                <span id="val-status" class="badge bg-secondary">--</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
     {% endif %}
 
-    <div class="card border-0 shadow-sm">
+    <div
+      class="card border-0 shadow-sm"
+      style="
+        border-radius: 12px;
+        border: 1px solid var(--vm-card-border);
+        background-color: transparent;
+      "
+    >
       <div
-        class="card-header border-0 bg-light d-flex justify-content-between align-items-center py-3"
+        class="card-header border-bottom d-flex justify-content-between align-items-center py-3"
+        style="
+          background-color: var(--vm-card-bg);
+          border-top-left-radius: 12px;
+          border-top-right-radius: 12px;
+          border-color: var(--vm-card-border) !important;
+        "
       >
-        <h6 class="m-0 fw-bold text-body">
+        <h6 class="m-0 fw-bold text-body text-uppercase tracking-wide">
           <i
-            class="fa-solid fa-list-check me-2"
+            class="fa-solid fa-tower-broadcast me-2"
             style="color: var(--vm-accent)"
           ></i>
-          Recent Ward Activity
+          Live Ward Telemetry Feed
         </h6>
-        <a href="/export_data" class="btn btn-sm btn-success fw-bold">
-          <i class="fa-solid fa-file-csv"></i> Export Data
+        <a
+          href="/export_data"
+          class="btn btn-sm btn-outline-secondary fw-bold rounded-pill px-3"
+        >
+          <i class="fa-solid fa-download me-1"></i> Export Log
         </a>
       </div>
-      <div class="card-body">
-        <div class="table-responsive">
-          <table
-            class="table table-hover align-middle datatable w-100 text-body"
-          >
-            <thead class="text-secondary small text-uppercase">
+
+      <div class="card-body p-0">
+        <div class="table-responsive px-3 pb-3">
+          <table class="live-feed-table datatable">
+            <thead>
               <tr>
-                <th>TIME</th>
-                <th>PATIENT</th>
-                <th>VITALS (T/HR/RR/BP)</th>
-                <th>AI ASSESSMENT</th>
-                <th>ACTION</th>
+                <th>Timestamp</th>
+                <th>Patient ID</th>
+                <th>Biometrics (T / HR / RR / BP)</th>
+                <th>AI Risk Assessment</th>
+                <th class="text-end">Action</th>
               </tr>
             </thead>
             <tbody>
               {% for row in history %}
-              <tr>
-                <td class="text-secondary">{{ row.time }}</td>
-                <td><span class="fw-bold text-body">{{ row.name }}</span></td>
-                <td>
-                  <span
-                    class="badge border border-secondary text-body"
-                    style="background-color: var(--vm-bg)"
-                    >{{ row.vitals }}</span
-                  >
+              <tr class="live-feed-row">
+                <td class="text-muted font-monospace small">
+                  <i class="fa-regular fa-clock me-1"></i> {{ row.time }}
                 </td>
                 <td>
-                  {% if row.status == 'High' or row.status == 'Critical' %}
-                  <span class="badge-critical rounded px-2 py-1"
-                    ><i class="fa-solid fa-triangle-exclamation"></i> SEPSIS
-                    ALERT</span
+                  <div class="d-flex align-items-center">
+                    <div
+                      class="rounded-circle d-flex justify-content-center align-items-center me-2"
+                      style="
+                        width: 30px;
+                        height: 30px;
+                        background: var(--accent-glow);
+                        color: var(--vm-accent);
+                      "
+                    >
+                      <i class="fa-solid fa-user-injured small"></i>
+                    </div>
+                    <span class="fw-bold text-body">{{ row.name }}</span>
+                  </div>
+                </td>
+                <td>
+                  {% set vitals_parts = row.vitals.split(' / ') %} {% if
+                  vitals_parts|length == 4 %}
+                  <span class="vital-tag border-warning text-warning"
+                    ><i class="fa-solid fa-temperature-half me-1"></i>{{
+                    vitals_parts[0].replace('T:', '') }}</span
                   >
-                  {% elif row.status == 'Warning' %}
-                  <span class="badge bg-warning text-dark"
-                    ><i class="fa-solid fa-bell"></i> Warning</span
+                  <span class="vital-tag border-danger text-danger"
+                    ><i class="fa-solid fa-heart-pulse me-1"></i>{{
+                    vitals_parts[1].replace('HR:', '') }}</span
+                  >
+                  <span class="vital-tag border-info text-info"
+                    ><i class="fa-solid fa-lungs me-1"></i>{{
+                    vitals_parts[2].replace('RR:', '') }}</span
+                  >
+                  <span
+                    class="vital-tag"
+                    style="border-color: #f43f5e; color: #f43f5e"
+                    ><i class="fa-solid fa-droplet me-1"></i>{{
+                    vitals_parts[3].replace('BP:', '') }}</span
                   >
                   {% else %}
-                  <span class="badge bg-success"
-                    ><i class="fa-solid fa-check"></i> Stable</span
-                  >
+                  <span class="font-monospace text-body">{{ row.vitals }}</span>
                   {% endif %}
                 </td>
                 <td>
+                  {% if row.status == 'High' or row.status == 'Critical' %}
+                  <span class="badge alert-strobe rounded-pill px-3 py-2"
+                    ><i class="fa-solid fa-biohazard me-1"></i> CRITICAL SEPSIS
+                    RISK</span
+                  >
+                  {% elif row.status == 'Warning' %}
+                  <span
+                    class="badge bg-warning text-dark rounded-pill px-3 py-2"
+                    ><i class="fa-solid fa-triangle-exclamation me-1"></i>
+                    ELEVATED RISK</span
+                  >
+                  {% else %}
+                  <span
+                    class="badge rounded-pill px-3 py-2"
+                    style="
+                      background: var(--accent-glow);
+                      color: var(--vm-accent);
+                      border: 1px solid var(--vm-accent);
+                    "
+                    ><i class="fa-solid fa-check me-1"></i> STABLE</span
+                  >
+                  {% endif %}
+                </td>
+                <td class="text-end">
                   <a
                     href="/generate_pdf/{{ row.id }}"
-                    class="btn btn-sm btn-outline-danger"
+                    class="btn btn-sm btn-light border shadow-sm rounded-3"
+                    style="color: var(--vm-accent)"
                   >
-                    <i class="fa-solid fa-file-pdf"></i> Report
+                    <i class="fa-solid fa-file-waveform"></i> EHR
                   </a>
                 </td>
               </tr>
@@ -586,80 +986,114 @@
       .then((response) => response.json())
       .then((data) => {
         if (data.error) {
-          document.getElementById("twinStatus").innerText = "No Data Yet";
+          document.getElementById("twinStatus").innerHTML =
+            "<i class='fa-solid fa-link-slash me-1'></i> No Data";
           document.getElementById("twinStatus").className =
-            "badge bg-warning text-dark";
+            "badge bg-warning text-dark px-3 py-2 rounded-pill";
+
           document.getElementById("val-temp").innerText = "--";
           document.getElementById("val-hr").innerText = "--";
           document.getElementById("val-rr").innerText = "--";
-          document.getElementById("val-status").innerText = "UNKNOWN";
-          document.getElementById("val-status").className =
-            "badge bg-secondary";
+          document.getElementById("val-bp").innerText = "--/--";
 
+          document.getElementById("val-status").innerText = "OFFLINE";
+          document.getElementById("val-status").className =
+            "badge bg-secondary fs-6 rounded-pill";
+
+          // Reset SVG
           document.getElementById("organ-heart").style.fill =
-            "var(--vm-organ-base)";
+            "rgba(148, 163, 184, 0.3)";
           document.getElementById("organ-head").style.fill =
-            "var(--vm-organ-base)";
+            "rgba(148, 163, 184, 0.3)";
           document.getElementById("organ-lungs").style.fill =
-            "var(--vm-organ-base)";
+            "rgba(148, 163, 184, 0.3)";
+          document.getElementById("body-aura").style.stroke = "transparent";
+          document.getElementById("body-aura").style.animation = "none";
           return;
         }
 
         const latest = data.latest_vitals;
 
+        // 1. Update Text Values
         document.getElementById("val-temp").innerText = latest.temp;
         document.getElementById("val-hr").innerText = latest.hr;
         document.getElementById("val-rr").innerText = latest.rr;
+        document.getElementById("val-bp").innerText =
+          latest.sys_bp + "/" + latest.dia_bp;
 
+        // 2. Update AI Status Badge
         const statusBadge = document.getElementById("val-status");
         statusBadge.innerText = latest.status.toUpperCase();
 
         if (latest.status === "High" || latest.status === "Critical") {
-          statusBadge.className = "badge-critical rounded px-2 py-1";
+          statusBadge.className =
+            "badge alert-strobe px-3 py-2 rounded-pill fs-6";
         } else if (latest.status === "Warning") {
-          statusBadge.className = "badge bg-warning text-dark";
+          statusBadge.className =
+            "badge bg-warning text-dark px-3 py-2 rounded-pill fs-6";
         } else {
-          statusBadge.className = "badge bg-success";
+          statusBadge.className = "badge px-3 py-2 rounded-pill fs-6";
+          statusBadge.style.backgroundColor = "var(--vm-accent)";
+          statusBadge.style.color = "white";
         }
 
+        // 3. Update Vitals Logic & Animations on the SVG Avatar
+
+        // HEART RATE (Heart organ color and throbbing speed)
         const heart = document.getElementById("organ-heart");
-        const pulseAnim = heart.querySelector("animateTransform");
-        if (latest.hr > 100) {
-          heart.style.fill = "#ef4444";
-          heart.style.opacity = "1";
-          pulseAnim.setAttribute("dur", "0.4s");
+        const pulseAnim = document.getElementById("anim-heart");
+        if (latest.hr > 100 || latest.hr < 50) {
+          heart.style.fill = "#ef4444"; // Red for abnormal
+          pulseAnim.setAttribute("dur", latest.hr > 100 ? "0.4s" : "2s"); // Fast vs Slow throb
         } else {
-          heart.style.fill = "var(--vm-organ-base)";
-          heart.style.opacity = "0.8";
+          heart.style.fill = "var(--vm-accent)"; // Healthy Green
           pulseAnim.setAttribute("dur", "1.2s");
         }
 
+        // TEMPERATURE (Head color mapping)
         const head = document.getElementById("organ-head");
         if (latest.temp > 38.0) {
-          head.style.fill = "#f59e0b";
-          head.style.opacity = "0.8";
+          head.style.fill = "#f59e0b"; // Orange/Red fever
         } else if (latest.temp < 36.0) {
-          head.style.fill = "#06b6d4";
-          head.style.opacity = "0.8";
+          head.style.fill = "#3b82f6"; // Blue hypothermia
         } else {
-          head.style.fill = "var(--vm-organ-base)";
-          head.style.opacity = "0.8";
+          head.style.fill = "var(--vm-accent)"; // Healthy Green
         }
 
+        // RESPIRATORY RATE (Lungs color and breathing expansion speed)
         const lungs = document.getElementById("organ-lungs");
-        if (latest.rr > 22) {
-          lungs.style.fill = "#818cf8";
-          lungs.style.opacity = "0.8";
+        const breatheAnim = document.getElementById("anim-lungs");
+        if (latest.rr > 22 || latest.rr < 12) {
+          lungs.style.fill = "#8b5cf6"; // Purple distress
+          breatheAnim.setAttribute("dur", latest.rr > 22 ? "0.8s" : "3s"); // Fast heave vs slow breath
         } else {
-          lungs.style.fill = "var(--vm-organ-base)";
-          lungs.style.opacity = "0.8";
+          lungs.style.fill = "var(--vm-accent)"; // Healthy Green
+          breatheAnim.setAttribute("dur", "2s");
         }
 
-        document.getElementById("twinStatus").innerText = "Live Sync Active";
-        document.getElementById("twinStatus").className = "badge bg-success";
+        // BLOOD PRESSURE (Systemic Body Aura)
+        const aura = document.getElementById("body-aura");
+        if (latest.sys_bp > 140 || latest.dia_bp > 90) {
+          aura.style.stroke = "#ef4444"; // Red Hypertension glow
+          aura.style.animation = "bpAuraPulse 1s infinite alternate";
+        } else if (latest.sys_bp < 90 || latest.dia_bp < 60) {
+          aura.style.stroke = "#3b82f6"; // Blue Hypotension glow
+          aura.style.animation = "bpAuraPulse 2s infinite alternate";
+        } else {
+          aura.style.stroke = "transparent"; // Normal, no aura
+          aura.style.animation = "none";
+        }
+
+        // Update Sync Status
+        document.getElementById("twinStatus").innerHTML =
+          "<i class='fa-solid fa-satellite-dish me-1'></i> Live Sync";
+        document.getElementById("twinStatus").className =
+          "badge px-3 py-2 rounded-pill text-white";
+        document.getElementById("twinStatus").style.backgroundColor =
+          "var(--vm-accent)";
 
         document.getElementById("system-clock").innerHTML =
-          '<i class="fas fa-satellite-dish me-1 text-success"></i> Connected: ' +
+          '<i class="fas fa-satellite-dish me-1" style="color: var(--vm-accent);"></i> Telemetry Online: ' +
           new Date().toLocaleTimeString();
       })
       .catch((err) => {
@@ -667,7 +1101,16 @@
       });
   }
 
+  // Automatically load the first patient if the selector exists
+  document.addEventListener("DOMContentLoaded", function () {
+    const selector = document.getElementById("dt-patient-selector");
+    if (selector && selector.options.length > 1) {
+      selector.selectedIndex = 1;
+      updateDigitalTwin();
+    }
+  });
+
+  // Poll every 10 seconds
   setInterval(updateDigitalTwin, 10000);
-  updateDigitalTwin();
 </script>
 {% endif %} {% endblock %}
