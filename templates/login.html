@@ -1,17 +1,35 @@
 {% extends "base.html" %} {% block content %}
 <style>
-  /* --- HIGH-END HOSPITAL BACKGROUND (HIGH VISIBILITY) --- */
-  body {
-    /* Vibrant medical blues shifting visibly */
-    background: linear-gradient(-45deg, #eff6ff, #93c5fd, #3b82f6, #bfdbfe);
-    background-size: 300% 300%;
-    animation: gradientBG 8s ease infinite;
+  /* --- OVERRIDE BASE.HTML TO FORCE FULL SCREEN --- */
+  .main-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  /* --- FULL SCREEN ANIMATED BACKGROUND --- */
+  .login-wrapper {
+    display: flex;
+    min-height: 100vh;
+    width: 100vw;
+    /* Vibrant gradient with purples, teals, and blues to kill the dullness */
+    background: linear-gradient(
+      -45deg,
+      #0f172a,
+      #4c1d95,
+      #0891b2,
+      #1e3a8a,
+      #312e81
+    );
+    background-size: 400% 400%;
+    animation: gradientShift 12s ease infinite;
     position: relative;
     z-index: 0;
   }
 
-  /* Telemetry Grid Overlay - Made more visible */
-  body::before {
+  /* Telemetry Grid Overlay covering everything */
+  .login-wrapper::before {
     content: "";
     position: absolute;
     top: 0;
@@ -19,24 +37,197 @@
     right: 0;
     bottom: 0;
     background-image:
-      linear-gradient(rgba(37, 99, 235, 0.15) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(37, 99, 235, 0.15) 1px, transparent 1px);
+      linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
     background-size: 40px 40px;
     z-index: -1;
   }
 
-  /* Dark Mode Adaptation */
-  [data-theme="dark"] body {
-    background: linear-gradient(-45deg, #020617, #1e40af, #0f172a, #1d4ed8);
-    background-size: 300% 300%;
-  }
-  [data-theme="dark"] body::before {
-    background-image:
-      linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  /* --- LEFT SIDE: TRANSPARENT SHOWCASE --- */
+  .visual-side {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
   }
 
-  @keyframes gradientBG {
+  .visual-content {
+    z-index: 10;
+    text-align: center;
+    color: white;
+    padding: 3rem;
+    max-width: 600px;
+  }
+
+  .big-icon {
+    font-size: 5.5rem;
+    color: #06b6d4; /* Vibrant Cyan */
+    filter: drop-shadow(0 0 25px rgba(6, 182, 212, 0.8));
+    animation: heartbeat 2s infinite;
+    margin-bottom: 1.5rem;
+  }
+
+  /* --- FLOATING HEALTH WIDGETS (THE FUN STARTUP VIBE) --- */
+  .floating-widget {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 1rem;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: white;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    z-index: 5;
+    animation: floatWidget 6s ease-in-out infinite;
+  }
+
+  .widget-icon-box {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+  }
+
+  /* Specific Widget Positioning & Colors */
+  .widget-1 {
+    top: 15%;
+    left: 10%;
+    animation-delay: 0s;
+  }
+  .widget-1 .widget-icon-box {
+    background: rgba(244, 63, 94, 0.2);
+    color: #f43f5e; /* Vibrant Pink/Red */
+  }
+
+  .widget-2 {
+    bottom: 20%;
+    right: 5%;
+    animation-delay: -2s;
+  }
+  .widget-2 .widget-icon-box {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981; /* Emerald Green */
+  }
+
+  .widget-3 {
+    top: 25%;
+    right: 10%;
+    animation-delay: -4s;
+    flex-direction: column;
+    padding: 1.5rem;
+    gap: 0.5rem;
+  }
+  .widget-3 .widget-icon-box {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b; /* Amber/Yellow */
+  }
+
+  /* --- RIGHT SIDE: GLASS FORM --- */
+  .form-side {
+    width: 500px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 3rem;
+    /* Frosted glass effect instead of a solid white/dark box */
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+  }
+
+  .login-card-custom {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-top: 4px solid #06b6d4;
+    border-radius: 1rem;
+    padding: 3rem 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* AI Scanning Line */
+  .scanner-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #a855f7; /* Purple laser */
+    box-shadow: 0 0 15px 3px #a855f7;
+    animation: scan 4s linear infinite;
+    opacity: 0.6;
+  }
+
+  /* Force Inputs to look good regardless of light/dark mode */
+  .custom-input-group {
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.2) !important;
+    transition: 0.3s;
+  }
+  .custom-input-group:focus-within {
+    border: 1px solid #06b6d4;
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+  }
+
+  .custom-input-group .input-group-text {
+    background: transparent !important;
+    border: none;
+    color: #06b6d4;
+  }
+  .custom-input-group .form-control {
+    background: transparent !important;
+    border: none;
+    color: white !important;
+  }
+  .custom-input-group .form-control::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  .custom-input-group .form-control:focus {
+    box-shadow: none;
+  }
+
+  .btn-login-glow {
+    background: linear-gradient(90deg, #6d28d9, #06b6d4);
+    border: none;
+    color: white;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    transition: 0.4s;
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+  }
+  .btn-login-glow:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.7);
+  }
+
+  /* --- ANIMATIONS --- */
+  @keyframes floatWidget {
+    0% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-20px) rotate(2deg);
+    }
+    100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+  }
+  @keyframes gradientShift {
     0% {
       background-position: 0% 50%;
     }
@@ -47,180 +238,189 @@
       background-position: 0% 50%;
     }
   }
-
-  /* Heartbeat Animation for the Logo */
   @keyframes heartbeat {
-    0% {
+    0%,
+    30%,
+    60%,
+    100% {
       transform: scale(1);
     }
-    15% {
-      transform: scale(1.15);
-    }
-    30% {
-      transform: scale(1);
-    }
+    15%,
     45% {
       transform: scale(1.15);
     }
-    60% {
-      transform: scale(1);
+  }
+  @keyframes scan {
+    0% {
+      top: -10%;
+      opacity: 0;
+    }
+    10% {
+      opacity: 0.6;
+    }
+    90% {
+      opacity: 0.6;
+    }
+    100% {
+      top: 110%;
+      opacity: 0;
     }
   }
 
-  .login-icon {
-    font-size: 3.5rem;
-    color: white;
-    margin-bottom: 1rem;
-    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
-    animation: heartbeat 2.5s infinite;
-  }
-
-  /* --- GLASSMORPHISM CARD --- */
-  .login-card {
-    border-radius: 1.5rem;
-    background: rgba(255, 255, 255, 0.85) !important;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.8);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    overflow: hidden;
-  }
-
-  [data-theme="dark"] .login-card {
-    background: rgba(30, 41, 59, 0.85) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
-  }
-
-  .login-header {
-    background: linear-gradient(
-      135deg,
-      rgba(37, 99, 235, 0.95) 0%,
-      rgba(29, 78, 216, 0.95) 100%
-    );
-    padding: 2.5rem 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  }
-
-  .custom-input-group .input-group-text,
-  .custom-input-group .form-control,
-  .custom-input-group .btn {
-    background-color: var(--vm-bg);
-    border-color: var(--vm-card-border);
-    color: var(--vm-text);
-    padding: 0.8rem 1rem;
-  }
-  .custom-input-group .form-control:focus {
-    box-shadow: none;
-    border-color: #2563eb;
-  }
-
-  .btn-login {
-    padding: 0.8rem;
-    border-radius: 0.5rem;
-    font-weight: bold;
-    letter-spacing: 0.5px;
-    transition: all 0.3s ease;
-  }
-  .btn-login:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 15px rgba(37, 99, 235, 0.4);
+  @media (max-width: 992px) {
+    .visual-side {
+      display: none;
+    }
+    .form-side {
+      width: 100%;
+      border-left: none;
+      background: transparent;
+    }
   }
 </style>
 
-<div
-  class="row justify-content-center align-items-center"
-  style="min-height: 85vh"
->
-  <div class="col-md-5 col-lg-4">
-    <div class="card login-card">
-      <div class="login-header text-center text-white border-0">
-        <i class="fa-solid fa-heart-pulse login-icon"></i>
-        <h2 class="fw-bold mb-0">VitalMine CDSS</h2>
-        <p
-          class="text-white-50 small mb-0 mt-1 fw-bold text-uppercase tracking-wide"
-        >
-          Clinical Decision Support
-        </p>
+<div class="login-wrapper">
+  <div class="visual-side d-none d-lg-flex">
+    <div class="floating-widget widget-1">
+      <div class="widget-icon-box">
+        <i
+          class="fa-solid fa-heart-pulse"
+          style="animation: heartbeat 1.5s infinite"
+        ></i>
       </div>
-
-      <div class="card-body p-4 p-md-5">
-        <h5 class="text-center fw-bold mb-4 text-body">Secure Access Login</h5>
-
-        <form method="POST" action="/login">
-          <div class="mb-4">
-            <label
-              class="form-label fw-bold text-secondary small text-uppercase"
-              >Username</label
-            >
-            <div class="input-group custom-input-group shadow-sm rounded">
-              <span class="input-group-text border-end-0 text-primary"
-                ><i class="fa-solid fa-user"></i
-              ></span>
-              <input
-                type="text"
-                name="username"
-                class="form-control border-start-0"
-                placeholder="Enter username"
-                required
-                autofocus
-              />
-            </div>
-          </div>
-
-          <div class="mb-4">
-            <label
-              class="form-label fw-bold text-secondary small text-uppercase"
-              >Password</label
-            >
-            <div class="input-group custom-input-group shadow-sm rounded">
-              <span class="input-group-text border-end-0 text-primary"
-                ><i class="fa-solid fa-lock"></i
-              ></span>
-              <input
-                type="password"
-                name="password"
-                id="passwordInput"
-                class="form-control border-start-0 border-end-0"
-                placeholder="Enter password"
-                required
-              />
-              <button
-                class="btn border-start-0 text-secondary"
-                type="button"
-                onclick="togglePassword()"
-              >
-                <i class="fa-solid fa-eye" id="eyeIcon"></i>
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            class="btn btn-primary w-100 btn-login mt-3 shadow-sm"
-          >
-            <i class="fa-solid fa-right-to-bracket me-2"></i> Authenticate
-          </button>
-        </form>
-
-        {% if error %}
-        <div
-          class="alert alert-danger mt-4 text-center fw-bold border-0 shadow-sm py-2"
-        >
-          <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
+      <div>
+        <div class="small text-white-50 fw-bold tracking-wide">LIVE VITALS</div>
+        <div class="fs-4 fw-bold">
+          98 <span class="fs-6 fw-normal text-white-50">BPM</span>
         </div>
-        {% endif %}
+      </div>
+    </div>
+
+    <div class="floating-widget widget-2">
+      <div class="widget-icon-box">
+        <i class="fa-solid fa-shield-virus"></i>
+      </div>
+      <div>
+        <div class="small text-white-50 fw-bold tracking-wide">AI STATUS</div>
+        <div class="fs-5 fw-bold text-success">Optimized</div>
+      </div>
+    </div>
+
+    <div class="floating-widget widget-3">
+      <div class="widget-icon-box">
+        <i class="fa-solid fa-chart-line"></i>
+      </div>
+      <div class="text-center">
+        <div class="fs-5 fw-bold text-warning">+99.8%</div>
+        <div class="small text-white-50 fw-bold tracking-wide">ACCURACY</div>
+      </div>
+    </div>
+
+    <div class="visual-content">
+      <i class="fa-solid fa-microchip big-icon"></i>
+      <h1
+        class="fw-bold text-white"
+        style="
+          font-size: 4rem;
+          letter-spacing: 2px;
+          text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        "
+      >
+        VITALMINE
+      </h1>
+      <h3 class="fw-light mb-4" style="color: #67e8f9">
+        Predictive Sepsis Engine
+      </h3>
+      <p class="text-white-50 fs-5 mx-auto mb-5" style="max-width: 450px">
+        Real-time telemetry processing and Machine Learning risk assessment for
+        critical care environments.
+      </p>
+
+      <div class="d-flex justify-content-center gap-5 mt-4">
+        <div class="text-center" style="color: #a855f7">
+          <i class="fa-solid fa-database fs-2 mb-2"></i>
+          <div class="fw-bold small tracking-wide">EHR DATABASE LINKED</div>
+        </div>
+        <div class="text-center" style="color: #06b6d4">
+          <i class="fa-solid fa-brain fs-2 mb-2"></i>
+          <div class="fw-bold small tracking-wide">ML ENGINE READY</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-side">
+    <div class="login-card-custom">
+      <div class="scanner-line"></div>
+
+      <div class="text-center mb-5 d-lg-none">
+        <i class="fa-solid fa-microchip fs-1 text-info mb-2"></i>
+        <h2 class="fw-bold text-white">VitalMine CDSS</h2>
       </div>
 
+      <h4 class="fw-bold mb-1 text-white">System Access</h4>
+      <p class="text-white-50 mb-4 small text-uppercase fw-bold tracking-wide">
+        Enter Credentials to Initialize
+      </p>
+
+      <form method="POST" action="/login">
+        <div class="mb-4">
+          <div class="input-group custom-input-group rounded">
+            <span class="input-group-text"
+              ><i class="fa-solid fa-user-shield"></i
+            ></span>
+            <input
+              type="text"
+              name="username"
+              class="form-control"
+              placeholder="Staff Username"
+              required
+              autofocus
+            />
+          </div>
+        </div>
+
+        <div class="mb-5">
+          <div class="input-group custom-input-group rounded">
+            <span class="input-group-text"
+              ><i class="fa-solid fa-fingerprint"></i
+            ></span>
+            <input
+              type="password"
+              name="password"
+              id="passwordInput"
+              class="form-control"
+              placeholder="Security Protocol (Password)"
+              required
+            />
+            <button
+              class="btn text-white-50"
+              type="button"
+              onclick="togglePassword()"
+            >
+              <i class="fa-solid fa-eye" id="eyeIcon"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-login-glow w-100">
+          <i class="fa-solid fa-power-off me-2"></i> Initialize Session
+        </button>
+      </form>
+
+      {% if error %}
       <div
-        class="card-footer text-center border-0 py-3"
-        style="background-color: transparent"
+        class="alert mt-4 text-center fw-bold border-0 shadow-sm py-2 bg-danger text-white"
       >
-        <small class="text-secondary fw-bold"
-          ><i class="fa-solid fa-shield-halved me-1"></i> End-to-End
-          Encrypted</small
-        >
+        <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ error }}
       </div>
+      {% endif %}
+    </div>
+
+    <div class="text-center mt-4">
+      <small class="text-white-50 fw-bold">
+        <i class="fa-solid fa-lock me-1"></i> 256-bit Encrypted Session
+      </small>
     </div>
   </div>
 </div>
