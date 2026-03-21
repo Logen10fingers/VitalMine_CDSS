@@ -1,204 +1,646 @@
 {% extends "base.html" %} {% block content %}
-<div class="container mt-4">
+
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Dancing+Script&display=swap");
+
+  /* --- HIDE SIDEBAR FOR PATIENT PAGE --- */
+  .sidebar {
+    display: none !important;
+  }
+  .main-content {
+    margin-left: 0 !important;
+  }
+
+  /* --- GLOBAL THEME OVERRIDES (AFFECTS NAVBAR IN BASE.HTML) --- */
+
+  /* LIGHT MODE: Rich, soft translucent yellow with warm text */
+  :root,
+  [data-bs-theme="light"] {
+    --vm-bg: #fffbeb; /* Soft buttery yellow */
+    --vm-topbar-bg: rgba(
+      253,
+      230,
+      138,
+      0.9
+    ); /* Darker, richer translucent amber */
+    --vm-card-bg: #ffffff;
+    --vm-card-border: #fde68a;
+    --vm-text-main: #451a03; /* Deep warm brown instead of harsh black */
+    --vm-text-muted: #92400e;
+    --vm-accent: #f59e0b; /* Vivid Amber */
+    --accent-glow: rgba(245, 158, 11, 0.2);
+    --bot-bg: linear-gradient(135deg, #f59e0b, #fbbf24);
+    --vm-watermark: #290b00; /* VERY dark brown for pure text */
+  }
+
+  /* DARK MODE: Sleek charcoal with glowing amber */
+  [data-bs-theme="dark"] {
+    --vm-bg: #121212;
+    --vm-topbar-bg: rgba(41, 37, 36, 0.9); /* Darker warm gray */
+    --vm-card-bg: #1e1b1a;
+    --vm-card-border: #44403c;
+    --vm-text-main: #fef3c7;
+    --vm-text-muted: #a8a29e;
+    --vm-accent: #fbbf24;
+    --accent-glow: rgba(251, 191, 36, 0.15);
+    --bot-bg: linear-gradient(135deg, #d97706, #f59e0b);
+    --vm-watermark: #fef08a; /* Bright pale yellow for handwriting */
+  }
+
+  /* --- PATTERNS TO FILL EMPTY SPACE --- */
+  body {
+    background-image: radial-gradient(
+      var(--vm-card-border) 1.5px,
+      transparent 1.5px
+    );
+    background-size: 30px 30px;
+    background-color: var(--vm-bg);
+  }
+
+  .top-navbar {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 2px solid var(--vm-accent) !important;
+  }
+
+  /* --- PURE HANDWRITING WATERMARKS (NO WIDGETS) --- */
+  .floating-phrase {
+    position: fixed;
+    z-index: 0;
+    color: var(--vm-watermark);
+    font-family: "Dancing Script", cursive;
+    font-weight: 400; /* Thin */
+    letter-spacing: 2px;
+    pointer-events: none;
+    white-space: nowrap;
+    opacity: 0.35; /* Dark enough to be seen instantly */
+  }
+
+  /* Linear edge-to-edge crossing animations */
+  @keyframes floatLeftToRight {
+    0% {
+      left: -30%;
+    }
+    100% {
+      left: 120%;
+    }
+  }
+  @keyframes floatRightToLeft {
+    0% {
+      right: -30%;
+    }
+    100% {
+      right: 120%;
+    }
+  }
+  @keyframes floatBottomToTop {
+    0% {
+      bottom: -20%;
+    }
+    100% {
+      bottom: 120%;
+    }
+  }
+  @keyframes floatTopToBottom {
+    0% {
+      top: -20%;
+    }
+    100% {
+      top: 120%;
+    }
+  }
+
+  /* Hide the background text on smaller screens */
+  @media (max-width: 1400px) {
+    .floating-phrase {
+      display: none !important;
+    }
+  }
+
+  .container {
+    position: relative;
+    z-index: 10;
+  }
+
+  /* --- CLEAN, ADAPTABLE CARDS --- */
+  .yellow-card {
+    background: var(--vm-card-bg);
+    border: 1px solid var(--vm-card-border);
+    border-top: 4px solid var(--vm-accent);
+    border-radius: 1rem;
+    box-shadow: 0 10px 30px var(--accent-glow);
+    transition:
+      background-color 0.3s,
+      border-color 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Status Readouts */
+  .status-box {
+    border-radius: 0.75rem;
+    padding: 3rem 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .status-critical {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 2px solid #ef4444;
+  }
+  .status-warning {
+    background: #fef3c7;
+    color: #b45309;
+    border: 2px solid #f59e0b;
+  }
+  .status-stable {
+    background: #d1fae5;
+    color: #065f46;
+    border: 2px solid #10b981;
+  }
+
+  [data-bs-theme="dark"] .status-critical {
+    background: rgba(239, 68, 68, 0.1);
+    color: #fca5a5;
+  }
+  [data-bs-theme="dark"] .status-warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: #fcd34d;
+  }
+  [data-bs-theme="dark"] .status-stable {
+    background: rgba(16, 185, 129, 0.1);
+    color: #6ee7b7;
+  }
+
+  /* Inputs */
+  .yellow-input-group {
+    border: 2px solid var(--vm-card-border);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    transition: 0.3s;
+    background: var(--vm-bg);
+  }
+  .yellow-input-group:focus-within {
+    border-color: var(--vm-accent);
+    box-shadow: 0 0 15px var(--accent-glow);
+  }
+  .yellow-input-group .input-group-text {
+    background: transparent;
+    border: none;
+    color: var(--vm-accent);
+  }
+  .yellow-input-group .form-control {
+    background: transparent;
+    border: none;
+    color: var(--vm-text-main);
+    font-weight: 600;
+  }
+  .yellow-input-group .form-control:focus {
+    box-shadow: none;
+  }
+
+  .btn-yellow {
+    background: var(--bot-bg);
+    border: none;
+    color: #fff !important;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 8px 20px var(--accent-glow);
+    transition: 0.3s;
+  }
+  .btn-yellow:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 25px var(--accent-glow);
+  }
+
+  /* History Log */
+  .history-entry {
+    background: var(--vm-bg);
+    border: 1px solid var(--vm-card-border);
+    border-left: 5px solid var(--vm-accent);
+    border-radius: 0.5rem;
+    transition: 0.2s;
+  }
+  .history-entry:hover {
+    transform: translateX(5px);
+    box-shadow: 0 5px 15px var(--accent-glow);
+  }
+
+  .pagination-controls .btn {
+    border-radius: 0.5rem;
+    font-weight: bold;
+    border: 1px solid var(--vm-card-border);
+    color: var(--vm-text-main);
+    background: var(--vm-bg);
+  }
+  .pagination-controls .btn.active-page {
+    background: var(--vm-accent);
+    border-color: var(--vm-accent);
+    color: white;
+    box-shadow: 0 0 10px var(--accent-glow);
+  }
+
+  /* --- EXTREME VITALBOT AI --- */
+  .vitalbot-container {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .vitalbot-badge {
+    background: var(--vm-accent);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    padding: 5px 12px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 15px var(--accent-glow);
+    animation: bounce 2s infinite;
+  }
+  .ai-bot-btn-extreme {
+    width: 85px;
+    height: 85px;
+    background: var(--bot-bg);
+    border: 4px solid var(--vm-card-bg);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 30px var(--vm-accent);
+    animation: botGlow 2s infinite alternate;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .ai-bot-btn-extreme:hover {
+    transform: scale(1.1);
+  }
+
+  .ai-terminal {
+    background: var(--vm-card-bg) !important;
+    border: 2px solid var(--vm-accent) !important;
+    box-shadow: 0 15px 40px var(--accent-glow) !important;
+    border-radius: 1rem;
+  }
+
+  @keyframes botGlow {
+    0% {
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    100% {
+      box-shadow: 0 0 50px var(--vm-accent);
+    }
+  }
+  @keyframes bounce {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+</style>
+
+<div
+  class="floating-phrase d-none d-xl-block"
+  style="
+    top: 12%;
+    font-size: 2.8rem;
+    animation: floatLeftToRight 75s linear infinite;
+    animation-delay: -5s;
+  "
+>
+  Continuous Care
+</div>
+<div
+  class="floating-phrase d-none d-xl-block"
+  style="
+    top: 30%;
+    font-size: 3.5rem;
+    animation: floatRightToLeft 85s linear infinite;
+    animation-delay: -15s;
+  "
+>
+  You are in safe hands
+</div>
+<div
+  class="floating-phrase d-none d-xl-block"
+  style="
+    left: 15%;
+    font-size: 2.5rem;
+    animation: floatBottomToTop 90s linear infinite;
+    animation-delay: -45s;
+  "
+>
+  Optimal Recovery
+</div>
+<div
+  class="floating-phrase d-none d-xl-block"
+  style="
+    left: 85%;
+    font-size: 2.8rem;
+    animation: floatTopToBottom 80s linear infinite;
+    animation-delay: -25s;
+  "
+>
+  Clinical Oversight
+</div>
+<div
+  class="floating-phrase d-none d-xl-block"
+  style="
+    top: 55%;
+    font-size: 4rem;
+    animation: floatLeftToRight 95s linear infinite;
+    animation-delay: -50s;
+  "
+>
+  Rest & Healing
+</div>
+<div
+  class="floating-phrase d-none d-xl-block"
+  style="
+    top: 80%;
+    font-size: 3rem;
+    animation: floatRightToLeft 90s linear infinite;
+    animation-delay: -8s;
+  "
+>
+  Monitored 24/7
+</div>
+<div
+  class="floating-phrase d-none d-xl-block"
+  style="
+    left: 45%;
+    font-size: 3.2rem;
+    animation: floatBottomToTop 100s linear infinite;
+    animation-delay: -20s;
+  "
+>
+  Healing in Progress
+</div>
+<div
+  class="floating-phrase d-none d-xl-block"
+  style="
+    left: 65%;
+    font-size: 2.6rem;
+    animation: floatTopToBottom 85s linear infinite;
+    animation-delay: -65s;
+  "
+>
+  Peaceful Recovery
+</div>
+
+<div class="container mt-4 mb-5">
   <div class="row mb-4">
-    <div class="col-md-8 mx-auto">
-      <div
-        class="card shadow border-0"
-        style="background-color: var(--vm-card-bg)"
-      >
-        <div class="card-body text-center p-5">
-          <h2 class="text-body fw-bold">Hello, {{ current_user.username }}</h2>
-
-          {% if status == 'High' or status == 'Critical' %}
-          <div class="alert alert-danger mt-3 shadow-sm border-0">
-            <h1 class="display-1">
-              <i class="fa-solid fa-triangle-exclamation"></i>
-            </h1>
-            <h3 class="fw-bold">HIGH RISK DETECTED</h3>
-            <p class="lead mb-0">{{ advice }}</p>
-          </div>
-
-          {% elif status == 'Warning' %}
-          <div class="alert alert-warning mt-3 shadow-sm border-0">
-            <h1 class="display-1 text-warning">
-              <i class="fa-solid fa-notes-medical"></i>
-            </h1>
-            <h3 class="text-dark fw-bold">Medical Attention Advised</h3>
-            <p class="lead text-dark mb-0">{{ advice }}</p>
-          </div>
-
-          {% elif status == 'Stable' %}
-          <div class="alert alert-success mt-3 shadow-sm border-0">
-            <h1 class="display-1">
-              <i class="fa-solid fa-heart-circle-check"></i>
-            </h1>
-            <h3 class="fw-bold">You are Stable</h3>
-            <p class="lead mb-0">{{ advice }}</p>
-          </div>
-
-          {% else %}
-          <div class="alert alert-secondary mt-3 border-0">
-            <h3 class="fw-bold">No Data Logged Today</h3>
-            <p class="mb-0">Please log your vitals below.</p>
-          </div>
-          {% endif %}
+    <div class="col-lg-10 mx-auto">
+      <div class="d-flex align-items-center">
+        <div
+          class="rounded-circle d-flex justify-content-center align-items-center me-4 shadow-sm"
+          style="
+            width: 75px;
+            height: 75px;
+            background: var(--bot-bg);
+            color: white;
+            font-size: 2.2rem;
+          "
+        >
+          <i class="fa-solid fa-user"></i>
+        </div>
+        <div>
+          <h1 class="fw-bold mb-0 text-body text-uppercase">
+            {{ current_user.username }}
+          </h1>
+          <span
+            class="badge mt-1"
+            style="
+              background: var(--accent-glow);
+              color: var(--vm-accent);
+              font-weight: 800;
+              letter-spacing: 1px;
+              border: 1px solid var(--vm-accent);
+              font-size: 0.85rem;
+            "
+          >
+            DIGITAL TWIN MONITORED
+          </span>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="row">
-    <div class="col-md-8 mx-auto">
-      <div class="card shadow-sm border-0">
-        <div
-          class="card-header text-white border-0"
-          style="background-color: #2563eb !important"
-        >
-          <h5 class="mb-0 py-1">
-            <i class="fa-solid fa-notes-medical me-1"></i> Log My Daily Vitals
-          </h5>
+  <div class="row mb-5">
+    <div class="col-lg-10 mx-auto">
+      <div class="yellow-card p-4 text-center">
+        {% if status == 'High' or status == 'Critical' %}
+        <div class="status-box status-critical shadow-sm">
+          <i class="fa-solid fa-triangle-exclamation display-2 mb-3"></i>
+          <h1 class="fw-bold mb-2">CRITICAL RISK</h1>
+          <p class="fs-5 mb-0 fw-medium">{{ advice }}</p>
         </div>
-        <div class="card-body" style="background-color: var(--vm-card-bg)">
-          <form method="POST" action="/add_vitals">
-            <div class="row">
-              <div class="col-6 mb-3">
-                <label
-                  class="form-label fw-bold text-secondary small text-uppercase"
-                  >Temperature (°C)</label
-                >
+        {% elif status == 'Warning' %}
+        <div class="status-box status-warning shadow-sm">
+          <i class="fa-solid fa-notes-medical display-2 mb-3"></i>
+          <h1 class="fw-bold mb-2">ATTENTION ADVISED</h1>
+          <p class="fs-5 mb-0 fw-medium">{{ advice }}</p>
+        </div>
+        {% elif status == 'Stable' %}
+        <div class="status-box status-stable shadow-sm">
+          <i class="fa-solid fa-heart-circle-check display-2 mb-3"></i>
+          <h1 class="fw-bold mb-2">BIOMETRICS STABLE</h1>
+          <p class="fs-5 mb-0 fw-medium">{{ advice }}</p>
+        </div>
+        {% else %}
+        <div class="py-5 text-muted">
+          <i
+            class="fa-solid fa-wave-square display-3 mb-3"
+            style="color: var(--vm-accent); opacity: 0.5"
+          ></i>
+          <h2 class="fw-bold text-body">Awaiting Telemetry</h2>
+          <p class="fs-5">
+            Log current biometrics to initialize the Sepsis Engine.
+          </p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-5">
+    <div class="col-lg-10 mx-auto">
+      <div class="yellow-card p-4 p-md-5">
+        <h4 class="fw-bold mb-4 text-body">
+          <i class="fa-solid fa-bolt me-2" style="color: var(--vm-accent)"></i>
+          Manual Telemetry Sync
+        </h4>
+        <form method="POST" action="/add_vitals">
+          <div class="row g-4 mb-4">
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-muted small text-uppercase"
+                >Temperature (°C)</label
+              >
+              <div class="input-group yellow-input-group shadow-sm">
+                <span class="input-group-text"
+                  ><i class="fa-solid fa-temperature-half"></i
+                ></span>
                 <input
                   type="number"
                   step="0.1"
                   name="temperature"
                   class="form-control"
+                  placeholder="37.0"
                   required
                 />
               </div>
-              <div class="col-6 mb-3">
-                <label
-                  class="form-label fw-bold text-secondary small text-uppercase"
-                  >Heart Rate (bpm)</label
-                >
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-muted small text-uppercase"
+                >Heart Rate</label
+              >
+              <div class="input-group yellow-input-group shadow-sm">
+                <span class="input-group-text"
+                  ><i class="fa-solid fa-heart-pulse text-danger"></i
+                ></span>
                 <input
                   type="number"
                   name="heart_rate"
                   class="form-control"
+                  placeholder="75"
                   required
                 />
               </div>
             </div>
-            <div class="row">
-              <div class="col-6 mb-3">
-                <label
-                  class="form-label fw-bold text-secondary small text-uppercase"
-                  >Resp. Rate</label
-                >
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-muted small text-uppercase"
+                >Resp. Rate</label
+              >
+              <div class="input-group yellow-input-group shadow-sm">
+                <span class="input-group-text"
+                  ><i class="fa-solid fa-lungs text-info"></i
+                ></span>
                 <input
                   type="number"
                   name="resp_rate"
                   class="form-control"
+                  placeholder="16"
                   required
                 />
               </div>
-              <div class="col-6 mb-3">
-                <label
-                  class="form-label fw-bold text-secondary small text-uppercase"
-                  >Blood Pressure (mmHg)</label
-                >
-                <div class="input-group">
-                  <input
-                    type="number"
-                    name="sys_bp"
-                    class="form-control"
-                    placeholder="120"
-                    required
-                  />
-                  <span class="input-group-text">/</span>
-                  <input
-                    type="number"
-                    name="dia_bp"
-                    class="form-control"
-                    placeholder="80"
-                    required
-                  />
-                </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold text-muted small text-uppercase"
+                >Blood Pressure</label
+              >
+              <div class="input-group yellow-input-group shadow-sm">
+                <span class="input-group-text"
+                  ><i class="fa-solid fa-droplet text-danger"></i
+                ></span>
+                <input
+                  type="number"
+                  name="sys_bp"
+                  class="form-control text-center"
+                  placeholder="120"
+                  required
+                />
+                <span class="input-group-text border-0 px-1 text-muted">/</span>
+                <input
+                  type="number"
+                  name="dia_bp"
+                  class="form-control text-center"
+                  placeholder="80"
+                  required
+                />
               </div>
             </div>
-            <button
-              type="submit"
-              class="btn btn-primary w-100 btn-lg fw-bold mt-2"
-            >
-              Check My Status
-            </button>
-          </form>
-        </div>
+          </div>
+          <button type="submit" class="btn btn-yellow w-100 fs-5">
+            Process AI Risk Score
+          </button>
+        </form>
       </div>
     </div>
   </div>
 
-  <div class="row mt-4 mb-5">
-    <div class="col-md-8 mx-auto">
-      <h5 class="fw-bold text-body mb-3">
-        <i class="fa-solid fa-clock-rotate-left me-2 text-primary"></i>My
-        Recovery History
+  <div class="row mb-5 pb-5">
+    <div class="col-lg-10 mx-auto">
+      <h5 class="fw-bold mb-3 text-body">
+        <i
+          class="fa-solid fa-database me-2"
+          style="color: var(--vm-accent)"
+        ></i>
+        Telemetry Archives
       </h5>
-      <div class="list-group shadow-sm">
-        {% for entry in entries %}
-        <div
-          class="list-group-item d-flex justify-content-between align-items-center"
-          style="
-            background-color: var(--vm-card-bg);
-            border-color: var(--vm-card-border);
-          "
-        >
-          <div>
-            <small class="text-secondary fw-bold"
-              >{{ entry.timestamp.strftime('%Y-%m-%d %H:%M') }}</small
-            ><br />
-            <span class="text-body">
-              <strong>T:</strong> {{ entry.temp }} | <strong>HR:</strong> {{
-              entry.hr }} | <strong>RR:</strong> {{ entry.rr }} |
-              <strong>BP:</strong> {{ entry.sys_bp }}/{{ entry.dia_bp }}
-            </span>
-          </div>
+      <div class="yellow-card p-4">
+        <div id="historyContainer" class="d-flex flex-column gap-2">
+          {% for entry in entries %} {% set badge_color = 'bg-success' %} {% if
+          entry.status == 'High' or entry.status == 'Critical' %}{% set
+          badge_color = 'bg-danger' %}{% endif %} {% if entry.status ==
+          'Warning' %}{% set badge_color = 'bg-warning text-dark' %}{% endif %}
 
-          <div>
-            {% if entry.status == 'High' or entry.status == 'Critical' %}
-            <span
-              class="badge bg-danger rounded-pill px-3 py-2"
-              style="
-                animation: pulse-red 1.5s infinite;
-                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
-              "
-              ><i class="fa-solid fa-triangle-exclamation me-1"></i>
-              Critical</span
-            >
-            {% elif entry.status == 'Warning' %}
-            <span class="badge bg-warning text-dark rounded-pill px-3 py-2"
-              ><i class="fa-solid fa-bell me-1"></i> Warning</span
-            >
-            {% else %}
-            <span class="badge bg-success rounded-pill px-3 py-2"
-              ><i class="fa-solid fa-check me-1"></i> Stable</span
-            >
-            {% endif %}
+          <div
+            class="history-entry p-3 d-none flex-column flex-md-row justify-content-between align-items-md-center shadow-sm"
+          >
+            <div>
+              <div class="text-muted small fw-bold mb-1">
+                <i class="fa-regular fa-clock me-1"></i> {{
+                entry.timestamp.strftime('%Y-%m-%d %H:%M') }}
+              </div>
+              <div class="fs-5 fw-medium text-body">
+                <span class="me-3"
+                  ><span class="text-muted fs-6">T:</span> {{ entry.temp
+                  }}</span
+                >
+                <span class="me-3"
+                  ><span class="text-muted fs-6">HR:</span> {{ entry.hr }}</span
+                >
+                <span class="me-3"
+                  ><span class="text-muted fs-6">RR:</span> {{ entry.rr }}</span
+                >
+                <span
+                  ><span class="text-muted fs-6">BP:</span> {{ entry.sys_bp
+                  }}/{{ entry.dia_bp }}</span
+                >
+              </div>
+            </div>
+            <div class="mt-2 mt-md-0">
+              <span
+                class="badge {{ badge_color }} fs-6 px-3 py-2 rounded-pill shadow-sm"
+                >{{ entry.status }}</span
+              >
+            </div>
           </div>
+          {% endfor %} {% if not entries %}
+          <div class="text-center py-4 text-muted border border-dashed rounded">
+            No historical data available.
+          </div>
+          {% endif %}
         </div>
-        {% endfor %}
+
+        <div
+          class="d-flex justify-content-center mt-4 gap-2 pagination-controls"
+          id="paginationControls"
+        ></div>
       </div>
     </div>
   </div>
 </div>
 
-<div style="position: fixed; bottom: 20px; right: 20px; z-index: 1000">
-  <button
-    class="btn btn-primary rounded-circle shadow-lg p-3"
-    type="button"
+<div class="vitalbot-container">
+  <div class="vitalbot-badge">AI ASSISTANT ACTIVE</div>
+  <div
+    class="ai-bot-btn-extreme"
     data-bs-toggle="collapse"
     data-bs-target="#chatBox"
   >
-    <i class="fa-solid fa-robot fa-2x"></i>
-  </button>
+    <i class="fa-solid fa-robot fa-3x text-white"></i>
+  </div>
 </div>
 
 <div
@@ -206,18 +648,20 @@
   id="chatBox"
   style="
     position: fixed;
-    bottom: 90px;
-    right: 20px;
-    z-index: 1000;
-    width: 350px;
+    bottom: 150px;
+    right: 30px;
+    z-index: 1060;
+    width: 380px;
   "
 >
-  <div class="card shadow-lg border-0">
+  <div class="card ai-terminal border-0">
     <div
-      class="card-header text-white d-flex justify-content-between border-0"
-      style="background-color: #2563eb !important"
+      class="card-header border-bottom p-3 d-flex justify-content-between align-items-center"
+      style="background: var(--bot-bg)"
     >
-      <strong><i class="fa-solid fa-user-doctor me-1"></i> VitalBot AI</strong>
+      <strong class="text-white text-uppercase" style="letter-spacing: 1px">
+        <i class="fa-solid fa-network-wired me-2"></i> VitalBot AI
+      </strong>
       <button
         type="button"
         class="btn-close btn-close-white"
@@ -225,28 +669,38 @@
         data-bs-target="#chatBox"
       ></button>
     </div>
+
     <div
       class="card-body"
       id="chatHistory"
-      style="
-        height: 250px;
-        overflow-y: auto;
-        background-color: var(--vm-card-bg);
-      "
+      style="height: 350px; overflow-y: auto; background: var(--vm-card-bg)"
     >
-      <div class="text-secondary text-center small mt-2 fw-bold">
-        I am reading your latest vitals...<br />Ask me anything!
+      <div class="text-center text-muted small fw-bold mt-2 mb-4">
+        Analyzing digital twin context... <br />
+        Ready for medical inquiry.
       </div>
     </div>
-    <div class="card-footer border-0" style="background-color: var(--vm-bg)">
-      <div class="input-group shadow-sm">
+
+    <div
+      class="card-footer border-top p-3"
+      style="
+        background: var(--vm-bg);
+        border-color: var(--vm-card-border) !important;
+      "
+    >
+      <div class="input-group yellow-input-group rounded-pill shadow-sm">
         <input
           type="text"
           id="userQuestion"
-          class="form-control border-0"
-          placeholder="Type here..."
+          class="form-control border-0 px-4"
+          placeholder="Ask VitalBot..."
+          onkeypress="if (event.key === 'Enter') sendMessage();"
         />
-        <button class="btn btn-primary" onclick="sendMessage()">
+        <button
+          class="btn px-4"
+          style="color: var(--vm-accent)"
+          onclick="sendMessage()"
+        >
           <i class="fa-solid fa-paper-plane"></i>
         </button>
       </div>
@@ -254,37 +708,65 @@
   </div>
 </div>
 
-<style>
-  @keyframes pulse-red {
-    0% {
-      transform: scale(0.95);
-      box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
-    }
-    70% {
-      transform: scale(1);
-      box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
-    }
-    100% {
-      transform: scale(0.95);
-      box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
-    }
-  }
-</style>
-
 <script>
+  // --- ROCK-SOLID PAGINATION LOGIC ---
+  document.addEventListener("DOMContentLoaded", function () {
+    const rowsPerPage = 10;
+    let currentPage = 1;
+    const entries = Array.from(document.querySelectorAll(".history-entry"));
+    const totalPages = Math.ceil(entries.length / rowsPerPage);
+    const controls = document.getElementById("paginationControls");
+
+    function displayPage(page) {
+      currentPage = page;
+      let start = (page - 1) * rowsPerPage;
+      let end = start + rowsPerPage;
+
+      entries.forEach((row, index) => {
+        if (index >= start && index < end) {
+          row.classList.remove("d-none");
+          row.classList.add("d-flex");
+        } else {
+          row.classList.remove("d-flex");
+          row.classList.add("d-none");
+        }
+      });
+      renderControls();
+    }
+
+    function renderControls() {
+      controls.innerHTML = "";
+      if (totalPages <= 1) return;
+
+      for (let i = 1; i <= totalPages; i++) {
+        let btn = document.createElement("button");
+        btn.innerText = i;
+        btn.className = `btn shadow-sm ${i === currentPage ? "active-page" : ""}`;
+        btn.onclick = () => displayPage(i);
+        controls.appendChild(btn);
+      }
+    }
+
+    if (entries.length > 0) displayPage(1);
+  });
+
+  // --- AI CHAT LOGIC ---
   async function sendMessage() {
     let input = document.getElementById("userQuestion");
     let history = document.getElementById("chatHistory");
     let text = input.value;
     if (!text) return;
 
-    history.innerHTML += `<div class="text-end mb-2"><span class="badge bg-primary p-2 text-wrap text-start fs-6 shadow-sm" style="max-width: 85%; font-weight: normal;">${text}</span></div>`;
+    // User Message
+    history.innerHTML += `<div class="text-end mb-3"><span class="badge px-3 py-2 text-start fs-6 shadow-sm" style="background: var(--bot-bg); color: white; border-radius: 1rem 1rem 0 1rem;">${text}</span></div>`;
     input.value = "";
 
+    // Loading State
     let loadingId = "load_" + Date.now();
-    history.innerHTML += `<div class="text-start mb-2" id="${loadingId}"><span class="badge bg-secondary p-2 shadow-sm"><i class="fa-solid fa-circle-notch fa-spin me-1"></i>Thinking...</span></div>`;
+    history.innerHTML += `<div class="text-start mb-3" id="${loadingId}"><span class="badge px-3 py-2 text-muted shadow-sm" style="background: var(--vm-bg); border: 1px solid var(--vm-card-border); border-radius: 1rem 1rem 1rem 0;"><i class="fa-solid fa-circle-notch fa-spin me-2" style="color: var(--vm-accent);"></i>Processing...</span></div>`;
     history.scrollTop = history.scrollHeight;
 
+    // API Call
     let response = await fetch("/chat_with_ai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -292,8 +774,9 @@
     });
     let data = await response.json();
 
+    // AI Response
     document.getElementById(loadingId).remove();
-    history.innerHTML += `<div class="text-start mb-2"><span class="badge bg-dark p-2 text-wrap text-start fs-6 shadow-sm" style="max-width: 90%; font-weight: normal; line-height: 1.4;">${data.response}</span></div>`;
+    history.innerHTML += `<div class="text-start mb-3"><span class="badge px-3 py-2 text-wrap text-start fs-6 shadow-sm text-body" style="background: var(--vm-bg); border: 1px solid var(--vm-card-border); border-radius: 1rem 1rem 1rem 0; line-height: 1.5;">${data.response}</span></div>`;
     history.scrollTop = history.scrollHeight;
   }
 </script>
