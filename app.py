@@ -505,6 +505,48 @@ def staff_directory():
     )
 
 
+@app.route("/edit_user/<int:user_id>", methods=["POST"])
+@login_required
+def edit_user(user_id):
+    if current_user.role != "admin":
+        return "Access Denied", 403
+
+    user_to_edit = db.session.get(User, user_id)
+    if not user_to_edit:
+        flash("User not found.", "danger")
+        return redirect(url_for("staff_directory"))
+
+    # Update common fields
+    new_username = request.form.get("username")
+    if new_username:
+        # Check if username is taken by someone else
+        existing_user = User.query.filter_by(username=new_username).first()
+        if existing_user and existing_user.id != user_id:
+            flash(f"Username '{new_username}' is already taken.", "danger")
+            return redirect(url_for("staff_directory"))
+        user_to_edit.username = new_username
+
+    user_to_edit.email = request.form.get("email")
+
+    # Update role-specific fields
+    if user_to_edit.role in ["doctor", "nurse", "admin"]:
+        user_to_edit.emp_id = request.form.get("emp_id")
+        user_to_edit.department = request.form.get("department")
+    elif user_to_edit.role == "patient":
+        age_val = request.form.get("age")
+        user_to_edit.age = int(age_val) if age_val and age_val.isdigit() else None
+        user_to_edit.gender = request.form.get("gender")
+        user_to_edit.blood_group = request.form.get("blood_group")
+        user_to_edit.contact = request.form.get("contact")
+
+    db.session.commit()
+    flash(
+        f"User profile for '{user_to_edit.username}' has been successfully updated.",
+        "success",
+    )
+    return redirect(url_for("staff_directory"))
+
+
 @app.route("/delete_user/<int:user_id>", methods=["POST"])
 @login_required
 def delete_user(user_id):

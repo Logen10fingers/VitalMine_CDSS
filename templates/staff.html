@@ -1,201 +1,658 @@
 {% extends "base.html" %} {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h3 class="mb-0 fw-bold text-body">
-    <i class="fa-solid fa-users-gear me-2"></i> System User Management
-  </h3>
-  <a href="/register" class="btn btn-primary fw-bold shadow-sm">
-    <i class="fa-solid fa-user-plus me-1"></i> Register New User
+
+<style>
+  /* --- SYSTEM MANAGEMENT HUD AESTHETICS --- */
+  .system-header {
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    margin-bottom: 2rem;
+  }
+
+  [data-bs-theme="dark"] .system-header {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  .nav-tabs .nav-link {
+    color: var(--vm-text-muted);
+    border: none;
+    border-bottom: 3px solid transparent;
+    padding: 1rem 1.5rem;
+    font-weight: 700;
+    transition: all 0.3s ease;
+    background: transparent !important;
+  }
+
+  .nav-tabs .nav-link:hover {
+    color: var(--vm-text-main);
+    border-color: rgba(148, 163, 184, 0.3);
+  }
+
+  .nav-tabs .nav-link.active {
+    color: var(--vm-accent) !important;
+    border-bottom: 3px solid var(--vm-accent) !important;
+    background: transparent !important;
+  }
+
+  /* Shared Table Styles from Dashboard */
+  .live-feed-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+  }
+
+  .live-feed-table th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--vm-text-muted);
+    border: none;
+    padding: 10px 16px;
+  }
+
+  .live-feed-row {
+    background-color: var(--vm-card-bg);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
+  }
+
+  [data-bs-theme="dark"] .live-feed-row {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .live-feed-row:hover {
+    transform: translateY(-2px) scale(1.005);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.05);
+  }
+
+  [data-bs-theme="dark"] .live-feed-row:hover {
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+  }
+
+  .live-feed-row td {
+    padding: 16px;
+    border-top: 1px solid var(--vm-card-border);
+    border-bottom: 1px solid var(--vm-card-border);
+    vertical-align: middle;
+  }
+
+  .live-feed-row td:first-child {
+    border-left: 1px solid var(--vm-card-border);
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+  }
+
+  .live-feed-row td:last-child {
+    border-right: 1px solid var(--vm-card-border);
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+  }
+
+  /* Glass Modal for Editing */
+  .modal-content.glass-modal {
+    background: var(--vm-card-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--vm-card-border);
+    border-radius: 16px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+  }
+
+  .glass-modal .modal-header {
+    border-bottom: 1px solid var(--vm-card-border);
+    background: rgba(0, 0, 0, 0.02);
+  }
+
+  .glass-modal .modal-footer {
+    border-top: 1px solid var(--vm-card-border);
+    background: rgba(0, 0, 0, 0.02);
+  }
+
+  .glass-input {
+    background: var(--vm-bg) !important;
+    border: 1px solid var(--vm-card-border) !important;
+    color: var(--vm-text-main) !important;
+    border-radius: 8px;
+  }
+  .glass-input:focus {
+    border-color: var(--vm-accent) !important;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15) !important;
+  }
+</style>
+
+<div class="system-header d-flex justify-content-between align-items-center">
+  <div>
+    <h3 class="mb-1 fw-bold text-white tracking-wide text-uppercase">
+      <i class="fa-solid fa-users-gear me-2 text-info"></i> System Roster
+    </h3>
+    <span class="text-white-50 small font-monospace"
+      >Authorized Admin Access Only</span
+    >
+  </div>
+  <a
+    href="/register"
+    class="btn btn-info fw-bold shadow text-white rounded-pill px-4"
+  >
+    <i class="fa-solid fa-user-plus me-1"></i> Register User
   </a>
 </div>
 
-<div class="card shadow-sm border-0">
-  <div class="card-header bg-light pt-3 pb-0 border-0">
-    <ul class="nav nav-tabs border-0" id="userManagementTabs" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button
-          class="nav-link active fw-bold text-primary"
-          id="doctors-tab"
-          data-bs-toggle="tab"
-          data-bs-target="#doctors"
-          type="button"
-          role="tab"
+<div class="mb-4 border-bottom border-secondary-subtle">
+  <ul class="nav nav-tabs border-0" id="userManagementTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button
+        class="nav-link active"
+        id="doctors-tab"
+        data-bs-toggle="tab"
+        data-bs-target="#doctors"
+        type="button"
+        role="tab"
+      >
+        <i class="fa-solid fa-user-doctor me-2"></i> Doctors
+        <span
+          class="badge bg-primary bg-opacity-25 text-primary ms-1 rounded-pill"
+          >{{ doctors|length }}</span
         >
-          <i class="fa-solid fa-user-doctor me-1"></i> Doctors ({{
-          doctors|length }})
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button
-          class="nav-link fw-bold text-info"
-          id="nurses-tab"
-          data-bs-toggle="tab"
-          data-bs-target="#nurses"
-          type="button"
-          role="tab"
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button
+        class="nav-link"
+        id="nurses-tab"
+        data-bs-toggle="tab"
+        data-bs-target="#nurses"
+        type="button"
+        role="tab"
+      >
+        <i class="fa-solid fa-user-nurse me-2"></i> Nurses
+        <span class="badge bg-info bg-opacity-25 text-info ms-1 rounded-pill"
+          >{{ nurses|length }}</span
         >
-          <i class="fa-solid fa-user-nurse me-1"></i> Nurses ({{ nurses|length
-          }})
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button
-          class="nav-link fw-bold text-success"
-          id="patients-tab"
-          data-bs-toggle="tab"
-          data-bs-target="#patients"
-          type="button"
-          role="tab"
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button
+        class="nav-link"
+        id="patients-tab"
+        data-bs-toggle="tab"
+        data-bs-target="#patients"
+        type="button"
+        role="tab"
+      >
+        <i class="fa-solid fa-bed-pulse me-2"></i> Patients
+        <span
+          class="badge bg-success bg-opacity-25 text-success ms-1 rounded-pill"
+          >{{ patients|length }}</span
         >
-          <i class="fa-solid fa-bed-pulse me-1"></i> Patients ({{
-          patients|length }})
-        </button>
-      </li>
-    </ul>
+      </button>
+    </li>
+  </ul>
+</div>
+
+<div class="tab-content" id="userManagementTabsContent">
+  <div class="tab-pane fade show active" id="doctors" role="tabpanel">
+    <div class="table-responsive px-2 pb-3">
+      <table class="live-feed-table datatable">
+        <thead>
+          <tr>
+            <th>Personnel</th>
+            <th>Contact / Email</th>
+            <th>Emp ID</th>
+            <th>Department</th>
+            <th class="text-end">System Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in doctors %}
+          <tr class="live-feed-row">
+            <td>
+              <div class="d-flex align-items-center">
+                <div
+                  class="rounded-circle d-flex justify-content-center align-items-center me-3"
+                  style="
+                    width: 40px;
+                    height: 40px;
+                    background: rgba(59, 130, 246, 0.1);
+                    color: #3b82f6;
+                  "
+                >
+                  <i class="fa-solid fa-stethoscope"></i>
+                </div>
+                <div>
+                  <div class="fw-bold text-body fs-6">{{ d.username }}</div>
+                  <div class="small text-muted text-uppercase">Doctor</div>
+                </div>
+              </div>
+            </td>
+            <td class="text-muted font-monospace small">
+              <i class="fa-regular fa-envelope me-1"></i> {{ d.email or 'N/A' }}
+            </td>
+            <td>
+              <span
+                class="badge bg-secondary bg-opacity-10 text-body border border-secondary-subtle"
+                >{{ d.emp_id or 'N/A' }}</span
+              >
+            </td>
+            <td>
+              <span class="fw-medium text-body"
+                >{{ d.department or 'N/A' }}</span
+              >
+            </td>
+            <td class="text-end">
+              <button
+                type="button"
+                class="btn btn-sm btn-light border shadow-sm text-primary rounded-3 me-2"
+                onclick="openEditModal('{{ d.id }}', '{{ d.role }}', '{{ d.username }}', '{{ d.email }}', '{{ d.emp_id }}', '{{ d.department }}', '', '', '', '')"
+              >
+                <i class="fa-solid fa-pen-to-square"></i> Edit
+              </button>
+
+              <form
+                method="POST"
+                action="/delete_user/{{ d.id }}"
+                style="display: inline"
+              >
+                <button
+                  type="submit"
+                  class="btn btn-sm btn-outline-danger fw-bold rounded-3"
+                  onclick="return confirm('WARNING: Are you sure you want to permanently delete Dr. {{ d.username }}?');"
+                >
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  <div class="card-body mt-3">
-    <div class="tab-content" id="userManagementTabsContent">
-      <div class="tab-pane fade show active" id="doctors" role="tabpanel">
-        <div class="table-responsive">
-          <table
-            class="table table-hover align-middle datatable w-100 text-body"
-          >
-            <thead class="text-secondary small text-uppercase">
-              <tr>
-                <th>Username</th>
-                <th>Email</th>
-                <th>Employee ID</th>
-                <th>Department</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for d in doctors %}
-              <tr>
-                <td class="fw-bold">{{ d.username }}</td>
-                <td>{{ d.email or 'N/A' }}</td>
-                <td>
-                  <span class="badge bg-secondary"
-                    >{{ d.emp_id or 'N/A' }}</span
-                  >
-                </td>
-                <td>{{ d.department or 'N/A' }}</td>
-                <td>
-                  <form
-                    method="POST"
-                    action="/delete_user/{{ d.id }}"
-                    style="display: inline"
-                  >
-                    <button
-                      type="submit"
-                      class="btn btn-sm btn-outline-danger fw-bold"
-                      onclick="return confirm('WARNING: Are you sure you want to permanently delete Dr. {{ d.username }}?');"
-                    >
-                      <i class="fa-solid fa-trash-can"></i> Delete
-                    </button>
-                  </form>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
+  <div class="tab-pane fade" id="nurses" role="tabpanel">
+    <div class="table-responsive px-2 pb-3">
+      <table class="live-feed-table datatable">
+        <thead>
+          <tr>
+            <th>Personnel</th>
+            <th>Contact / Email</th>
+            <th>Emp ID</th>
+            <th>Department</th>
+            <th class="text-end">System Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for n in nurses %}
+          <tr class="live-feed-row">
+            <td>
+              <div class="d-flex align-items-center">
+                <div
+                  class="rounded-circle d-flex justify-content-center align-items-center me-3"
+                  style="
+                    width: 40px;
+                    height: 40px;
+                    background: rgba(14, 165, 233, 0.1);
+                    color: #0ea5e9;
+                  "
+                >
+                  <i class="fa-solid fa-notes-medical"></i>
+                </div>
+                <div>
+                  <div class="fw-bold text-body fs-6">{{ n.username }}</div>
+                  <div class="small text-muted text-uppercase">Nurse</div>
+                </div>
+              </div>
+            </td>
+            <td class="text-muted font-monospace small">
+              <i class="fa-regular fa-envelope me-1"></i> {{ n.email or 'N/A' }}
+            </td>
+            <td>
+              <span
+                class="badge bg-secondary bg-opacity-10 text-body border border-secondary-subtle"
+                >{{ n.emp_id or 'N/A' }}</span
+              >
+            </td>
+            <td>
+              <span class="fw-medium text-body"
+                >{{ n.department or 'N/A' }}</span
+              >
+            </td>
+            <td class="text-end">
+              <button
+                type="button"
+                class="btn btn-sm btn-light border shadow-sm text-primary rounded-3 me-2"
+                onclick="openEditModal('{{ n.id }}', '{{ n.role }}', '{{ n.username }}', '{{ n.email }}', '{{ n.emp_id }}', '{{ n.department }}', '', '', '', '')"
+              >
+                <i class="fa-solid fa-pen-to-square"></i> Edit
+              </button>
 
-      <div class="tab-pane fade" id="nurses" role="tabpanel">
-        <div class="table-responsive">
-          <table
-            class="table table-hover align-middle datatable w-100 text-body"
-          >
-            <thead class="text-secondary small text-uppercase">
-              <tr>
-                <th>Username</th>
-                <th>Email</th>
-                <th>Employee ID</th>
-                <th>Department</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for n in nurses %}
-              <tr>
-                <td class="fw-bold">{{ n.username }}</td>
-                <td>{{ n.email or 'N/A' }}</td>
-                <td>
-                  <span class="badge bg-secondary"
-                    >{{ n.emp_id or 'N/A' }}</span
-                  >
-                </td>
-                <td>{{ n.department or 'N/A' }}</td>
-                <td>
-                  <form
-                    method="POST"
-                    action="/delete_user/{{ n.id }}"
-                    style="display: inline"
-                  >
-                    <button
-                      type="submit"
-                      class="btn btn-sm btn-outline-danger fw-bold"
-                      onclick="return confirm('WARNING: Are you sure you want to permanently delete Nurse {{ n.username }}?');"
-                    >
-                      <i class="fa-solid fa-trash-can"></i> Delete
-                    </button>
-                  </form>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              <form
+                method="POST"
+                action="/delete_user/{{ n.id }}"
+                style="display: inline"
+              >
+                <button
+                  type="submit"
+                  class="btn btn-sm btn-outline-danger fw-bold rounded-3"
+                  onclick="return confirm('WARNING: Are you sure you want to permanently delete Nurse {{ n.username }}?');"
+                >
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-      <div class="tab-pane fade" id="patients" role="tabpanel">
-        <div class="table-responsive">
-          <table
-            class="table table-hover align-middle datatable w-100 text-body"
-          >
-            <thead class="text-secondary small text-uppercase">
-              <tr>
-                <th>Username</th>
-                <th>Demographics</th>
-                <th>Blood Group</th>
-                <th>Contact</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for p in patients %}
-              <tr>
-                <td class="fw-bold">{{ p.username }}</td>
-                <td>{{ p.age or 'N/A' }} / {{ p.gender or 'N/A' }}</td>
-                <td>
-                  <span class="badge bg-dark border border-secondary text-info"
-                    >{{ p.blood_group or 'N/A' }}</span
-                  >
-                </td>
-                <td>{{ p.contact or 'N/A' }}</td>
-                <td>
-                  <form
-                    method="POST"
-                    action="/delete_user/{{ p.id }}"
-                    style="display: inline"
-                  >
-                    <button
-                      type="submit"
-                      class="btn btn-sm btn-danger fw-bold shadow-sm"
-                      onclick="return confirm('CRITICAL WARNING: Deleting patient {{ p.username }} will also permanently erase their entire medical vitals history. Proceed?');"
-                    >
-                      <i class="fa-solid fa-user-xmark"></i> Erase Patient
-                    </button>
-                  </form>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
+  <div class="tab-pane fade" id="patients" role="tabpanel">
+    <div class="table-responsive px-2 pb-3">
+      <table class="live-feed-table datatable">
+        <thead>
+          <tr>
+            <th>Patient Record</th>
+            <th>Demographics</th>
+            <th>Blood Group</th>
+            <th>Emergency Contact</th>
+            <th class="text-end">System Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in patients %}
+          <tr class="live-feed-row">
+            <td>
+              <div class="d-flex align-items-center">
+                <div
+                  class="rounded-circle d-flex justify-content-center align-items-center me-3"
+                  style="
+                    width: 40px;
+                    height: 40px;
+                    background: rgba(16, 185, 129, 0.1);
+                    color: #10b981;
+                  "
+                >
+                  <i class="fa-solid fa-user-injured"></i>
+                </div>
+                <div>
+                  <div class="fw-bold text-body fs-6">{{ p.username }}</div>
+                  <div class="small text-success text-uppercase fw-bold">
+                    <i class="fa-solid fa-satellite-dish"></i> Monitored
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="text-body fw-medium"
+                >{{ p.age or '--' }} Yrs / {{ p.gender or '--' }}</span
+              >
+            </td>
+            <td>
+              <span
+                class="badge rounded-pill px-3 py-2"
+                style="
+                  background: rgba(244, 63, 94, 0.1);
+                  color: #f43f5e;
+                  border: 1px solid rgba(244, 63, 94, 0.2);
+                "
+                ><i class="fa-solid fa-droplet me-1"></i> {{ p.blood_group or
+                'Unknown' }}</span
+              >
+            </td>
+            <td class="text-muted font-monospace small">
+              <i class="fa-solid fa-phone me-1"></i> {{ p.contact or 'N/A' }}
+            </td>
+            <td class="text-end">
+              <button
+                type="button"
+                class="btn btn-sm btn-light border shadow-sm text-primary rounded-3 me-2"
+                onclick="openEditModal('{{ p.id }}', '{{ p.role }}', '{{ p.username }}', '{{ p.email }}', '', '', '{{ p.age }}', '{{ p.gender }}', '{{ p.blood_group }}', '{{ p.contact }}')"
+              >
+                <i class="fa-solid fa-pen-to-square"></i> Edit
+              </button>
+
+              <form
+                method="POST"
+                action="/delete_user/{{ p.id }}"
+                style="display: inline"
+              >
+                <button
+                  type="submit"
+                  class="btn btn-sm btn-danger fw-bold shadow-sm rounded-3"
+                  onclick="return confirm('CRITICAL WARNING: Deleting patient {{ p.username }} will also permanently erase their entire medical vitals history. Proceed?');"
+                >
+                  <i class="fa-solid fa-user-xmark"></i> Erase
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
 </div>
+
+<div
+  class="modal fade"
+  id="editUserModal"
+  tabindex="-1"
+  aria-labelledby="editUserModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content glass-modal">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold text-body" id="editUserModalLabel">
+          <i class="fa-solid fa-user-pen me-2 text-info"></i> Edit User Profile
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <form id="editUserForm" method="POST" action="">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label text-muted small fw-bold text-uppercase"
+              >Username</label
+            >
+            <div class="input-group">
+              <span
+                class="input-group-text bg-transparent border-secondary-subtle"
+                ><i class="fa-solid fa-user text-secondary"></i
+              ></span>
+              <input
+                type="text"
+                class="form-control glass-input"
+                id="edit_username"
+                name="username"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label text-muted small fw-bold text-uppercase"
+              >Email Address</label
+            >
+            <div class="input-group">
+              <span
+                class="input-group-text bg-transparent border-secondary-subtle"
+                ><i class="fa-solid fa-envelope text-secondary"></i
+              ></span>
+              <input
+                type="email"
+                class="form-control glass-input"
+                id="edit_email"
+                name="email"
+              />
+            </div>
+          </div>
+
+          <div id="staff_fields" style="display: none">
+            <div class="row">
+              <div class="col-6 mb-3">
+                <label
+                  class="form-label text-muted small fw-bold text-uppercase"
+                  >Employee ID</label
+                >
+                <input
+                  type="text"
+                  class="form-control glass-input"
+                  id="edit_emp_id"
+                  name="emp_id"
+                />
+              </div>
+              <div class="col-6 mb-3">
+                <label
+                  class="form-label text-muted small fw-bold text-uppercase"
+                  >Department</label
+                >
+                <input
+                  type="text"
+                  class="form-control glass-input"
+                  id="edit_department"
+                  name="department"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div id="patient_fields" style="display: none">
+            <div class="row">
+              <div class="col-6 mb-3">
+                <label
+                  class="form-label text-muted small fw-bold text-uppercase"
+                  >Age</label
+                >
+                <input
+                  type="number"
+                  class="form-control glass-input"
+                  id="edit_age"
+                  name="age"
+                />
+              </div>
+              <div class="col-6 mb-3">
+                <label
+                  class="form-label text-muted small fw-bold text-uppercase"
+                  >Gender</label
+                >
+                <select
+                  class="form-select glass-input"
+                  id="edit_gender"
+                  name="gender"
+                >
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-6 mb-3">
+                <label
+                  class="form-label text-muted small fw-bold text-uppercase"
+                  >Blood Group</label
+                >
+                <input
+                  type="text"
+                  class="form-control glass-input"
+                  id="edit_blood_group"
+                  name="blood_group"
+                  placeholder="e.g. O+"
+                />
+              </div>
+              <div class="col-6 mb-3">
+                <label
+                  class="form-label text-muted small fw-bold text-uppercase"
+                  >Contact Info</label
+                >
+                <input
+                  type="text"
+                  class="form-control glass-input"
+                  id="edit_contact"
+                  name="contact"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button
+            type="button"
+            class="btn btn-light shadow-sm text-secondary fw-bold rounded-pill px-4"
+            data-bs-dismiss="modal"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="btn btn-info text-white shadow fw-bold rounded-pill px-4"
+          >
+            <i class="fa-solid fa-cloud-arrow-up me-1"></i> Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Function to populate and open the Edit Modal dynamically
+  function openEditModal(
+    id,
+    role,
+    username,
+    email,
+    emp_id,
+    department,
+    age,
+    gender,
+    blood,
+    contact,
+  ) {
+    // Set Form Action Route
+    document.getElementById("editUserForm").action = "/edit_user/" + id;
+
+    // Set Common Fields
+    document.getElementById("edit_username").value =
+      username !== "None" ? username : "";
+    document.getElementById("edit_email").value = email !== "None" ? email : "";
+
+    // Toggle Fields based on Role
+    if (role === "patient") {
+      document.getElementById("staff_fields").style.display = "none";
+      document.getElementById("patient_fields").style.display = "block";
+
+      document.getElementById("edit_age").value = age !== "None" ? age : "";
+      if (gender !== "None" && gender !== "") {
+        document.getElementById("edit_gender").value = gender;
+      }
+      document.getElementById("edit_blood_group").value =
+        blood !== "None" ? blood : "";
+      document.getElementById("edit_contact").value =
+        contact !== "None" ? contact : "";
+    } else {
+      document.getElementById("staff_fields").style.display = "block";
+      document.getElementById("patient_fields").style.display = "none";
+
+      document.getElementById("edit_emp_id").value =
+        emp_id !== "None" ? emp_id : "";
+      document.getElementById("edit_department").value =
+        department !== "None" ? department : "";
+    }
+
+    // Show Modal
+    var myModal = new bootstrap.Modal(document.getElementById("editUserModal"));
+    myModal.show();
+  }
+</script>
+
 {% endblock %}
