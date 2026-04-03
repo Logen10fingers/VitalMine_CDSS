@@ -636,8 +636,8 @@ if __name__ == "__main__":
             )
             db.session.add(
                 User(
-                    username="patient_om",
-                    email="om@gmail.com",
+                    username="patient_Ben",
+                    email="Ben@gmail.com",
                     password=default_password,
                     role="patient",
                     age=21,

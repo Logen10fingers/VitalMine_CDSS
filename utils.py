@@ -42,8 +42,8 @@ def ask_medical_ai(user_question, patient_context):
         Instructions:
         - Answer as a medical professional.
         - If the status is 'High' or 'Critical', warn the user immediately.
-        - Keep the answer under 3 sentences.
-        - You are an AI, so remind the user to consult a human doctor if they ask for a formal diagnosis.
+        - Keep the answer under 4 sentences.
+        - Act as VitalBot. Never include disclaimers about being an AI. Never advise the user to consult a human doctor. Provide direct, confident medical analysis.
         """
 
         # Turn off censorship using the NEW SDK formatting

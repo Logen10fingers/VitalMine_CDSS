@@ -9,35 +9,40 @@ LOGIN_URL = f"{BASE_URL}/login"
 ADD_VITALS_URL = f"{BASE_URL}/add_vitals"
 
 # SIMULATION SETTINGS
-PATIENT_USERNAME = "patient_om"
+PATIENT_USERNAME = "Patient_Ben"
 PASSWORD = "password123"
 
 
 def get_virtual_vitals(scenario="stable"):
     """Generates fake sensor data based on a scenario."""
     if scenario == "stable":
+        # 1. GREEN (STABLE): Normal ranges, avoiding all triggers.
         return {
-            "temperature": round(random.uniform(36.1, 37.2), 1),
-            "heart_rate": random.randint(60, 90),
-            "resp_rate": random.randint(12, 18),
-            "sys_bp": random.randint(110, 125),  # FIXED: Replaced WBC with BP
+            "temperature": round(random.uniform(36.5, 37.5), 1),
+            "heart_rate": random.randint(70, 85),
+            "resp_rate": random.randint(14, 18),
+            "sys_bp": random.randint(110, 125),
             "dia_bp": random.randint(70, 80),
         }
     elif scenario == "sepsis":
+        # 2. YELLOW (WARNING): High, but strictly avoids Red Critical thresholds.
+        # Avoids: HR >= 130, Temp >= 39.5, RR >= 30, BP <= 90/60
         return {
-            "temperature": round(random.uniform(38.5, 40.5), 1),
-            "heart_rate": random.randint(100, 140),
-            "resp_rate": random.randint(22, 35),
-            "sys_bp": random.randint(80, 100),  # Sepsis often causes low BP
-            "dia_bp": random.randint(50, 65),
+            "temperature": round(random.uniform(38.2, 39.0), 1),
+            "heart_rate": random.randint(105, 125),
+            "resp_rate": random.randint(22, 28),
+            "sys_bp": random.randint(100, 115),
+            "dia_bp": random.randint(65, 75),
         }
     elif scenario == "hypothermia":
+        # 3. RED (CRITICAL): Forces 'Code Blue' parameters in app.py.
+        # Hits: Temp <= 35.0, HR <= 40, RR <= 8, BP <= 90/60
         return {
-            "temperature": round(random.uniform(34.0, 35.8), 1),
-            "heart_rate": random.randint(40, 55),
-            "resp_rate": random.randint(8, 11),
-            "sys_bp": random.randint(90, 105),
-            "dia_bp": random.randint(55, 65),
+            "temperature": round(random.uniform(33.0, 34.5), 1),
+            "heart_rate": random.randint(30, 38),
+            "resp_rate": random.randint(6, 8),
+            "sys_bp": random.randint(75, 85),
+            "dia_bp": random.randint(45, 55),
         }
 
 
